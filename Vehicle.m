@@ -128,8 +128,7 @@ classdef Vehicle
             heading = mod(180 .* atan2(flowu, flowv)./pi, 360);
         end
         
-        function speed = velocityCalc(obj, environment)
-            irradiance = environment.avgIrradiance();
+        function speed = velocityCalc(obj)
             %             speed = ((obj.panelEfficiency*obj.panelArea*irradiance) - obj.backgroundDraw);
 %             rho_sw = 1023.6; % density of salt water
 %             numerator = (obj.panelEfficiency * obj.panelArea * irradiance - obj.backgroundDraw)*obj.motorEfficiency;

@@ -1,3 +1,4 @@
+% Driver Code
 clear;clc;close all;
 
 % User vars
@@ -12,13 +13,17 @@ endRun = false; % trigger to end run
 % Initialize run
 runDomain = Environment(desiredSpeed, desiredDays);
 currentTime = runDomain.startTime;
-startLong = runDomain.longitudeRange(1);
-startLat = mean(runDomain.latitudeRange);
-runVehicle = Vehicle(startLat, startLong);
+start.long = runDomain.longitudeRange(1);
+start.lat = mean(runDomain.latitudeRange);
+runVehicle = Vehicle(start.lat, start.long);
+
+% Set goal 
+goal.long = runDomain.longitudeRange(end);
+goal.lat = start.lat; % travel perfectly horizontal
 
 while(~endRun)
     
 
-    [endRun, currentTime] = endCheck(currentTime, runVehicle, runDomain);
+    [endRun, currentTime] = endCheck(currentTime, runVehicle, runDomain, goal, wpThresh);
 end
 
