@@ -55,11 +55,11 @@ classdef Vehicle
             
         end
         
-        function obj = moveBoat(obj, environment, goalLat, goalLong)
+        function obj = moveBoat(obj, environment, goalLat, goalLong, currentTime)
             %obj is the current boat we are moving
             
             % Collect Boat assigned speed and heading towards goal
-            obj.motorSpeed = obj.velocityCalc(environment);
+            obj.motorSpeed = obj.velocityCalc();
             goalHeading = obj.headingCalc(goalLat, goalLong);
             
             % Don't let boat run motor if it will use up too much battery
@@ -68,7 +68,7 @@ classdef Vehicle
 %             end
             
             % Pull flow components
-            [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude); % Pull flow components from environmental data
+            [flow_u, flow_v] = environment.flowComponents(); % Pull flow components from environmental data
             if isnan(flow_u)
                 flow_u = 0;
             end
@@ -91,14 +91,14 @@ classdef Vehicle
             
             % Calculate resulting position only if battery can handle it
             % u moves longitude; v moves latitude
-            obj.longitude = obj.longitude + nm2deg((obj.speed_u * hours(environment.timeStep)));
-            obj.latitude = obj.latitude + nm2deg((obj.speed_v * hours(environment.timeStep)));
+            obj.longitude = real(obj.longitude + nm2deg((obj.speed_u * hours(environment.timeStep))));
+            obj.latitude = real(obj.latitude + nm2deg((obj.speed_v * hours(environment.timeStep))));
             
             % Update battery state
-            obj.charge = useCharge(obj, environment);
+            obj.charge = useCharge(obj, environment, currentTime);
             
         end
-        function updatedCharge = useCharge(obj, environment)
+        function updatedCharge = useCharge(obj, environment, currentTime)
             % Speed/Power Lookup Table
             speeds = [0, 2.4, 3.1, 3.83, 4.43, 4.9]; % boat speeds in kts
             speeds = convvel(speeds, 'kts', 'm/s');
@@ -106,7 +106,7 @@ classdef Vehicle
             
             motorDraw = interp1(speeds, powerDraw, obj.motorSpeed);
             %             irradiance = environment.getIrradiance(obj.latitude, obj.longitude);
-            irradiance = environment.avgIrradiance(); % average irradiance in w/m^2
+            irradiance = environment.getIrradiance(currentTime); % average irradiance in w/m^2
             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
             
             updatedCharge = obj.charge + (irradiance - motorDraw - obj.backgroundDraw) * (hours(environment.timeStep));
