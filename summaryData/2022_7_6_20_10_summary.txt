@@ -1,0 +1,12 @@
+Velocity Controller Test
+Year: 2022	Month: 7	Day: 6
+Hour: 20	Minute: 10
+
+--------------------------------
+Strategy: Constant speed throughout run
+Boat Speed: 2.32 m/s
+--------------------------------
+Duration:
+	Hours: 28	Minutes: 9
+Charge Usage: 728390.23 Watts
+Flow U: 0.00 m/s	Flow V: 0.77 m/s

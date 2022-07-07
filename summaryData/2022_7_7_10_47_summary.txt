@@ -1,0 +1,21 @@
+Velocity Controller Test
+Year: 2022	Month: 7	Day: 7
+Hour: 10	Minute: 47
+
+--------------------------------
+Strategy: Slow Leg One, Fast Leg Two
+Leg One Boat Speed: 1.29 m/s
+Leg Two Boat Speed: 2.32 m/s
+--------------------------------
+Total Duration:
+	Hours: 33	Minutes: 58
+Total Charge Usage: 499491.94 Watts
+Flow U: 0.00 m/s	Flow V: 0.77 m/s
+
+--------------------------------
+Leg 1 Duration:
+	Hours: 17	Minutes: 29
+Leg One Charge Usage: 72980.43 Watts
+Leg 2 Duration:
+	Hours: 16	Minutes: 29
+Leg Two Charge Usage: 426511.51 Watts

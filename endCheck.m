@@ -1,4 +1,4 @@
-function [endRun, currentTime] = endCheck(currentTime, runVehicle, runDomain, goal, wpThresh)
+function [endRun, currentTime, legCounter] = endCheck(currentTime, runVehicle, runDomain, goal, wpThresh, legCounter)
 %endCheck Check whether the simulation end trigger should be tripped
 %   endRun - simulation end trigger (initially false to let sim run)
 %   currentTime - currentTime of the simulation (end if past endTime)
@@ -24,18 +24,17 @@ function [endRun, currentTime] = endCheck(currentTime, runVehicle, runDomain, go
     end
 
     % End simulation if boat has reached goal
-    if distanceCalc(lat, long, goal) <= wpThresh
-        endRun = true;
+    if distanceCalc(lat, long, goal, legCounter) <= wpThresh
+        if legCounter == 2
+            endRun = true;
+        else
+            legCounter = 2;
+        end
     end
     
-    % Iterate time step
-    if currentTime >= runDomain.endTime
-        endRun = true; % end run if time is up
-    else
-        currentTime = currentTime + 1;
-    end
+    currentTime = currentTime + 1;
 end
 
-function dist = distanceCalc(currentLat, currentLong, goal)
-    dist = deg2nm(distance('gc', goal.lat, goal.long, currentLat, currentLong));
+function dist = distanceCalc(currentLat, currentLong, goal, legCounter)
+    dist = deg2nm(distance('gc', goal.lat(legCounter), goal.long(legCounter), currentLat, currentLong));
 end

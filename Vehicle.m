@@ -55,11 +55,11 @@ classdef Vehicle
             
         end
         
-        function obj = moveBoat(obj, environment, goalLat, goalLong, currentTime)
+        function [obj, chargeUsage] = moveBoat(obj, environment, goalLat, goalLong, currentTime, chargeUsage, legCounter)
             %obj is the current boat we are moving
             
             % Collect Boat assigned speed and heading towards goal
-            obj.motorSpeed = obj.velocityCalc();
+            obj.motorSpeed = obj.velocityCalc(legCounter);
             goalHeading = obj.headingCalc(goalLat, goalLong);
             
             % Don't let boat run motor if it will use up too much battery
@@ -94,8 +94,8 @@ classdef Vehicle
             obj.longitude = real(obj.longitude + nm2deg((obj.speed_u * hours(environment.timeStep))));
             obj.latitude = real(obj.latitude + nm2deg((obj.speed_v * hours(environment.timeStep))));
             
-            % Update battery state
-            obj.charge = useCharge(obj, environment, currentTime);
+%             % Update battery state
+            chargeUsage = chargeUsage + useCharge(obj, environment, currentTime);
             
         end
         function updatedCharge = useCharge(obj, environment, currentTime)
@@ -106,15 +106,16 @@ classdef Vehicle
             
             motorDraw = interp1(speeds, powerDraw, obj.motorSpeed);
             %             irradiance = environment.getIrradiance(obj.latitude, obj.longitude);
-            irradiance = environment.getIrradiance(currentTime); % average irradiance in w/m^2
-            irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
+%             irradiance = environment.getIrradiance(currentTime); % average irradiance in w/m^2
+%             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
             
-            updatedCharge = obj.charge + (irradiance - motorDraw - obj.backgroundDraw) * (hours(environment.timeStep));
-            if updatedCharge <= 0
-                updatedCharge = 0;
-            elseif updatedCharge >= obj.batteryCapacity
-                updatedCharge = obj.batteryCapacity;
-            end
+%             updatedCharge = obj.charge + (irradiance - motorDraw - obj.backgroundDraw) * (hours(environment.timeStep));
+%             if updatedCharge <= 0
+%                 updatedCharge = 0;
+%             elseif updatedCharge >= obj.batteryCapacity
+%                 updatedCharge = obj.batteryCapacity;
+%             end
+            updatedCharge = motorDraw;
         end
         
         function heading = headingCalc(obj, goalLat, goalLong)
@@ -128,33 +129,26 @@ classdef Vehicle
             heading = mod(180 .* atan2(flowu, flowv)./pi, 360);
         end
         
-        function speed = velocityCalc(obj)
-            %             speed = ((obj.panelEfficiency*obj.panelArea*irradiance) - obj.backgroundDraw);
-%             rho_sw = 1023.6; % density of salt water
-%             numerator = (obj.panelEfficiency * obj.panelArea * irradiance - obj.backgroundDraw)*obj.motorEfficiency;
-%             denominator = (1/2)*(rho_sw) * obj.boatArea * obj.Cd;
-%             speed = power(numerator/denominator,1/3);
-%             speed = abs(speed);
-            
-            % Strat: aim to deplete battery (using only motor power)
-            % exactly one day from current time
-            
-            % Speed/Power Lookup Table
-            speeds = [0, 2.4, 3.1, 3.83, 4.43, 4.9]; % boat speeds in kts
-            speeds = convvel(speeds, 'kts', 'm/s');
-            powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
-            
-            stateOfCharge = obj.charge; % current charge in wH
-            stateOfCharge = stateOfCharge/24; % current draw to hit goal
-            
-            speed = interp1(powerDraw, speeds, stateOfCharge);
-            
-            
-            if speed > convvel(4.5, 'kts', 'm/s')
+        function speed = velocityCalc(obj, legCounter)           
+%             % Speed/Power Lookup Table
+%             speeds = [0, 2.4, 3.1, 3.83, 4.43, 4.9]; % boat speeds in kts
+%             speeds = convvel(speeds, 'kts', 'm/s');
+%             powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
+%             
+%             stateOfCharge = obj.charge; % current charge in wH
+%             stateOfCharge = stateOfCharge/24; % current draw to hit goal
+%             
+%             speed = interp1(powerDraw, speeds, stateOfCharge);
+%             
+%             
+%             if speed > convvel(4.5, 'kts', 'm/s')
+%                 speed = convvel(4.5, 'kts', 'm/s');
+%             end
+            if legCounter == 1
+                speed = convvel(2.5, 'kts', 'm/s');  
+            elseif legCounter == 2
                 speed = convvel(4.5, 'kts', 'm/s');
             end
-            
-            
         end
         
     end
