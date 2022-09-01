@@ -24,7 +24,7 @@ speeds = convvel(speeds, 'kts', 'm/s');
 powerDraw = [0, 18, 45, 62, 115, 235, 404, 587]; % corresponding wattage
 chargeDiffThresh = 100;
 
-for legOneSpeed = 0.1:0.1:4.5
+for legOneSpeed = 2:0.1:4.5
     % Pre-defined vars
     global currentTime;
     wpThresh = 0.05;
@@ -94,13 +94,15 @@ for legOneSpeed = 0.1:0.1:4.5
                 [flow_u, flow_v] = runDomain.flowComponents();
 
                 % replace with try-catch
-                denom = real(sqrt((testSpeed.^2) - (flow_v.^2)));
-
+%                 denom = real(sqrt((testSpeed.^2) - (flow_v.^2)));
+                denom = flow_u + testSpeed;
                 legTwoTime = legTwoDist./denom;
                 legTwoTime = hours(seconds(legTwoTime));
                 estChargeUse = interp1(speeds, powerDraw, testSpeed, 'pchip') .* legTwoTime;
                 indices = abs(estChargeUse - availableCharge) < chargeDiffThresh;
                 legTwoSpeed = testSpeed(find(indices==1));
+
+                
                 
 %                 keyboard
 

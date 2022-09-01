@@ -19,7 +19,7 @@ classdef smartVehicle
         
         % Battery Details
         charge; % Vehicle's current battery charge
-        batteryCapacity = 2750; % Wh battery capacity
+        batteryCapacity = 3500; % Wh battery capacity
 %         backgroundDraw = 10; % 10W Hotel Load
         
         % Solar Panel Details

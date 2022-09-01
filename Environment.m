@@ -32,8 +32,8 @@ classdef Environment
         end
         function [flow_u, flow_v] = flowComponents()
             % Output constant flow in positive y-axis direction in m/s
-            flow_u = convvel(0, 'kts', 'm/s');
-            flow_v = convvel(1.5, 'kts', 'm/s');
+            flow_u = convvel(1.5, 'kts', 'm/s');
+            flow_v = convvel(0, 'kts', 'm/s');
         end
     end
     
