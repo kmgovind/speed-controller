@@ -32,7 +32,7 @@ function [endRun, currentTime, legCounter] = endCheck(currentTime, runVehicle, r
         end
     end
     
-    currentTime = currentTime + 1;
+    currentTime = currentTime + minutes(runDomain.timeStep);
 end
 
 function dist = distanceCalc(currentLat, currentLong, goal, legCounter)

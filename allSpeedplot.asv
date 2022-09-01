@@ -1,0 +1,23 @@
+clear;clc;close all;
+
+load("allSpeeds.mat");
+
+% Plot speeds vs time
+figure(1);
+scatter3(resultsTable,'legOneSpeed','legTwoSpeed','totalTime','filled', ...
+    'ColorVariable','totalTime');
+title('Total Traversal Time');
+xlabel('Leg One Speed (kts)');
+ylabel('Leg Two Speed (kts)');
+zlabel('Travel Time (min)');
+
+% Plot speeds vs energy usage
+figure(2);
+scatter3(resultsTable,'legOneSpeed','legTwoSpeed','usedCharge','filled', ...
+    'ColorVariable','usedCharge');
+title('Energy Used');
+xlabel('Leg One Speed (kts)');
+ylabel('Leg Two Speed (kts)');
+zlabel('Energy Used (kWh)');
+
+% Create combined metric of time and energy usage

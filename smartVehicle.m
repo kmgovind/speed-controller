@@ -1,4 +1,4 @@
-classdef Vehicle
+classdef smartVehicle
     %% Properties of boat
     properties
         % Boat Position
@@ -19,7 +19,7 @@ classdef Vehicle
         
         % Battery Details
         charge; % Vehicle's current battery charge
-        batteryCapacity = 1877.27; % Wh battery capacity
+        batteryCapacity = 2750; % Wh battery capacity
 %         backgroundDraw = 10; % 10W Hotel Load
         
         % Solar Panel Details
@@ -34,7 +34,7 @@ classdef Vehicle
     
     %% Methods
     methods
-        function obj = Vehicle(lat, long)
+        function obj = smartVehicle(lat, long)
             % Assign Lat-Long
             obj.latitude = lat;
             obj.longitude = long;
@@ -55,11 +55,11 @@ classdef Vehicle
             
         end
         
-        function obj = moveBoat(obj, environment, goalLat, goalLong, currentTime, legCounter)
+        function obj = moveBoat(obj, environment, goalLat, goalLong, currentTime, boatSpeed)
             %obj is the current boat we are moving
             
             % Collect Boat assigned speed and heading towards goal
-            obj.motorSpeed = obj.velocityCalc(legCounter);
+            obj.motorSpeed = convvel(boatSpeed, 'kts', 'm/s');
             goalHeading = obj.headingCalc(goalLat, goalLong);
             
             % Pull flow components
@@ -129,9 +129,9 @@ classdef Vehicle
 %                 speed = convvel(4.5, 'kts', 'm/s');
 %             end
             if legCounter == 1
-                speed = convvel(2.5, 'kts', 'm/s');  
+                speed = convvel(legOneSpeed, 'kts', 'm/s');  
             elseif legCounter == 2
-                speed = convvel(4.5, 'kts', 'm/s');
+                speed = convvel(2.5, 'kts', 'm/s');
             end
         end
         
