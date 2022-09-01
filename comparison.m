@@ -89,13 +89,16 @@ for legOneSpeed = 2:0.1:4.5
                 legOneCharge = runVehicle.charge;
 
                 availableCharge = runVehicle.batteryCapacity - runVehicle.charge;
-                testSpeed = 0.1:0.1:4.5;
+                testSpeed = 1.5:0.1:4.5;
                 testSpeed = convvel(testSpeed, 'kts', 'm/s');
                 [flow_u, flow_v] = runDomain.flowComponents();
 
                 % replace with try-catch
-%                 denom = real(sqrt((testSpeed.^2) - (flow_v.^2)));
-                denom = flow_u + testSpeed;
+%                 denom = real(sqrt((testSpeed.^2) - (flow_v.^2))); %
+%                 1.5kts N
+%                 denom = flow_u + testSpeed; % 1.5 kts E
+                denom = sqrt(testSpeed.^2 - (flow_v)^2) + flow_u; % 1.5 N 1.5 E
+                    % min speed 1.5 kts to cancel out vertical flow.
                 legTwoTime = legTwoDist./denom;
                 legTwoTime = hours(seconds(legTwoTime));
                 estChargeUse = interp1(speeds, powerDraw, testSpeed, 'pchip') .* legTwoTime;
