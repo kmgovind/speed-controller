@@ -68,7 +68,7 @@ classdef Vehicle
 %             end
             
             % Pull flow components
-            [flow_u, flow_v] = environment.flowComponents(); % Pull flow components from environmental data
+            [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude); % Pull flow components from environmental data
             if isnan(flow_u)
                 flow_u = 0;
             end
@@ -106,7 +106,7 @@ classdef Vehicle
             
             motorDraw = interp1(speeds, powerDraw, obj.motorSpeed);
             %             irradiance = environment.getIrradiance(obj.latitude, obj.longitude);
-            irradiance = environment.getIrradiance(currentTime); % average irradiance in w/m^2
+            irradiance = environment.getIrradiance(obj.latitude, obj.longitude); % average irradiance in w/m^2
             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
             
             updatedCharge = obj.charge + (irradiance - motorDraw - obj.backgroundDraw) * (hours(environment.timeStep));

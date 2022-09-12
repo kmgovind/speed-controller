@@ -1,54 +1,57 @@
 classdef Environment
     % Properties of environment
-    
+
     properties
-        endTime;
-        longitudeRange;
-        irradiance;
-        sunTime;
+        enviroData; % flow and sunlight data
     end
-    
+
     properties (Constant)
         % Time
-        startTime = 0;
         timeStep = minutes(1);
-        
-        % Domain
-        latitudeRange = 0:0.01:0.331;
+        startTime = minutes(days(1)); % Start at 1 Day
+        endTime = minutes(days(60)); % End at 60 Day
+        %         endTime = minutes(days(3));
+        %         latitudeRange = 32:0.01:37;
+        %         longitudeRange = -79:0.01:-74;
+        %         latitudeRange = 32.5:0.01:33.5;
+        %         longitudeRange = -78:0.01:-77;
+
+        latitudeRange = 33.5:0.01:34.5;
+        longitudeRange = -76.1:0.01:-75.1;
     end
-    
+
     %% Methods
     methods (Static)
-        
-        % Initialize Domain
-        function obj = Environment(desiredSpeed, desiredDays)
-            % Calculate total nm width given speed and days
-            numHours = hours(days(desiredDays)); % number of hours in desiredDays
-            totalnm = desiredSpeed * numHours;
-            totaldeg = nm2deg(totalnm); % Convert nm to degrees
-            obj.endTime = minutes(days(desiredDays));
-            obj.longitudeRange = 0:0.01:totaldeg;
-
-            enviroData = load('flowSunData3.mat');
-            obj.sunTime = 0:8*60:248*8*60;
-            avgSun = mean(enviroData.sun_ssr, [1,2]);
-            obj.irradiance = squeeze(avgSun);
-        end
-        
-        % Flow Dynamics
-        function [flow_u, flow_v] = flowComponents()
-            % Constant vertical flow at 2 m/s
-            flow_u = 0;
-            flow_v = 2;
+        function obj = Environment()
+            obj.enviroData = load('2MonthData.mat');
+            obj.enviroData.sun_t = 0:8*60:248*8*60;
         end
     end
-    
+
     methods
-        function sunlight = getIrradiance(obj, currentTime)
-            % Find index in obj.enviroData.sunTime that is nearest to
-            % currentTime and reference value in obj.avgSun
-            [~, ix] = min(abs(obj.sunTime - currentTime));
-            sunlight = obj.irradiance(ix);
+        function [flow_u, flow_v] = flowComponents(obj, latitude, longitude)
+
+            % Interpolate data at required time
+            global currentTime
+            flowTime = days(minutes(currentTime));
+            flow_u = interp3(obj.enviroData.flowlat, obj.enviroData.flowlon, obj.enviroData.flowt, obj.enviroData.u, latitude, longitude, flowTime);
+            flow_v = interp3(obj.enviroData.flowlat, obj.enviroData.flowlon, obj.enviroData.flowt, obj.enviroData.v, latitude, longitude, flowTime);
+
+            %             % Convert from m/s to kts
+            %             flow_u = convvel(flow_u, 'm/s', 'kts');
+            %             flow_v = convvel(flow_v, 'm/s', 'kts');
         end
+
+        function sunlight = getIrradiance(obj, latitude, longitude)
+            % find solar irradiance at given location at current time
+            % Interpolate data at required time
+            global currentTime
+            flowTime = days(minutes(currentTime));
+            sunlight = interp3(sort(double(obj.enviroData.sun_long)), sort(double(obj.enviroData.sun_lat)), sort(unique(double(obj.enviroData.sun_t))), double(obj.enviroData.sun_ssr), latitude, longitude, flowTime);
+            if isnan(sunlight)
+                sunlight = 0;
+            end
+        end
+
     end
 end
