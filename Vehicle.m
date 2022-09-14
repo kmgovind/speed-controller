@@ -105,9 +105,9 @@ classdef Vehicle
             powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
             
             motorDraw = interp1(speeds, powerDraw, obj.motorSpeed);
-            %             irradiance = environment.getIrradiance(obj.latitude, obj.longitude);
-            irradiance = environment.getIrradiance(obj.latitude, obj.longitude); % average irradiance in w/m^2
-            irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
+            irradiance = 0;
+%             irradiance = environment.getIrradiance(obj.latitude, obj.longitude); % average irradiance in w/m^2
+%             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
             
             updatedCharge = obj.charge + (irradiance - motorDraw - obj.backgroundDraw) * (hours(environment.timeStep));
             if updatedCharge <= 0
@@ -145,10 +145,15 @@ classdef Vehicle
             powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
             
             stateOfCharge = obj.charge; % current charge in wH
-            stateOfCharge = stateOfCharge/24; % current draw to hit goal
-            
-            speed = interp1(powerDraw, speeds, stateOfCharge);
-            
+%             stateOfCharge = stateOfCharge/24; % current draw to hit goal
+%             
+%             speed = interp1(powerDraw, speeds, stateOfCharge);
+           
+            if stateOfCharge > 0
+                speed = convvel(2.5, 'kts', 'm/s');
+            else
+                speed = 0;
+            end
             
             if speed > convvel(4.5, 'kts', 'm/s')
                 speed = convvel(4.5, 'kts', 'm/s');

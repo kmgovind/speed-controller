@@ -16,6 +16,10 @@ boattransect.longitude = boattransect.longitude + km2deg(5);
 latListTransect = nan(1,domaintransect.endTime - domaintransect.startTime);
 longListTransect = nan(1,domaintransect.endTime - domaintransect.startTime);
 
+% Track distance traveled
+distCum = zeros(1,domaintransect.endTime - domaintransect.startTime);
+distLeg = zeros(1,domaintransect.endTime - domaintransect.startTime);
+
 % Direction Leg used to determine part of transect strategy
 % 0 - right; 1 - up; 2 - left; 3 - up
 legCount = 0;
@@ -30,11 +34,18 @@ for currentTime = domaintransect.startTime:minutes(domaintransect.timeStep):doma
     end
     
     % Move boattransect towards goal
+    tempLat = boattransect.latitude;
+    tempLong = boattransect.longitude;
     boattransect = boattransect.moveBoat(domaintransect, goal.lat, goal.long, currentTime);
     %     fprintf('\nTime: %d\tLat: %d\tLong:%d', currentTime-domaintransect.startTime+1, boattransect.latitude, boattransect.longitude);
     latListTransect(currentTime - domaintransect.startTime + 1) = boattransect.latitude;
     longListTransect(currentTime - domaintransect.startTime + 1) = boattransect.longitude;
-   
+    distLeg(currentTime - domaintransect.startTime + 1) = deg2nm(distance('gc',tempLat, tempLong, boattransect.latitude, boattransect.longitude));
+    if currentTime - domaintransect.startTime == 0
+        distCum(currentTime - domaintransect.startTime + 1) = distLeg(currentTime - domaintransect.startTime + 1);
+    else
+        distCum(currentTime - domaintransect.startTime + 1) = distCum(currentTime - domaintransect.startTime) + distLeg(currentTime - domaintransect.startTime + 1);
+    end
     % PLOT UPDATE
     hold on;
     
@@ -62,6 +73,7 @@ for currentTime = domaintransect.startTime:minutes(domaintransect.timeStep):doma
 end
 
 % Path over time
+figure(1);
 y = latListTransect(latListTransect ~= 0);
 x = longListTransect(longListTransect ~= 0);
 z = zeros(size(x));
@@ -69,13 +81,15 @@ col = 1:length(x);  % This is the color, vary with x in this case.
 surface([x;x],[y;y],[z;z],[col;col],...
     'facecol','no',...
     'edgecol','interp',...
-    'linew',2);
+     'linew',2);
 axis([-76.1,-75.1,33.5,34.5]);
 title('Transect Path Over Time');
 saveas(gcf, 'transectpath.fig');
 
-% Convert total coverage to percentage and plot
-figure;
-plot(totalCoverageTransect./numel(domaintransect.coverageMap));
-saveas(gcf, 'transectcoverage.fig');
+figure(2);
+plot(distLeg);
+title('Per Leg Distance Traveled');
 
+figure(3);
+plot(distCum);
+title('Cumulative Distance Traveled');
