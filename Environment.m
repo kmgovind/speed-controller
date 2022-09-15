@@ -25,6 +25,8 @@ classdef Environment
         function obj = Environment()
             obj.enviroData = load('2MonthData.mat');
             obj.enviroData.sun_t = 0:8*60:248*8*60;
+            obj.enviroData.sun_ssr = mean(mean(obj.enviroData.sun_ssr));
+            obj.enviroData.sun_ssr = squeeze(obj.enviroData.sun_ssr);
         end
     end
 
@@ -42,12 +44,13 @@ classdef Environment
             %             flow_v = convvel(flow_v, 'm/s', 'kts');
         end
 
-        function sunlight = getIrradiance(obj, latitude, longitude)
+        function sunlight = getIrradiance(obj)
             % find solar irradiance at given location at current time
             % Interpolate data at required time
             global currentTime
-            flowTime = days(minutes(currentTime));
-            sunlight = interp3(sort(double(obj.enviroData.sun_long)), sort(double(obj.enviroData.sun_lat)), sort(unique(double(obj.enviroData.sun_t))), double(obj.enviroData.sun_ssr), latitude, longitude, flowTime);
+%             flowTime = days(minutes(currentTime));
+%             sunlight = interp3(sort(double(obj.enviroData.sun_long)), sort(double(obj.enviroData.sun_lat)), sort(unique(double(obj.enviroData.sun_t))), double(obj.enviroData.sun_ssr), latitude, longitude, flowTime);
+            sunlight = interp1(obj.enviroData.sun_t, obj.enviroData.sun_ssr, currentTime);
             if isnan(sunlight)
                 sunlight = 0;
             end
