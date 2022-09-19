@@ -60,13 +60,14 @@ classdef Vehicle
             
             % Calculate new boat speed every 30 minutes (for MPC
             % implementation)
-            if mod(currentTime, 30)
-                obj.motorSpeed = obj.velocityCalc(environment);
-            end
+%             if mod(currentTime, 30)
+%                 obj.motorSpeed = obj.velocityCalc(environment);
+%             end
+%             obj.motorSpeed = obj.velocityCalc(environment);
             
-            if obj.charge == 0
-                obj.motorSpeed = 0;
-            end
+%             if obj.charge == 0
+%                 obj.motorSpeed = 0;
+%             end
             
             % Compute heading
             goalHeading = obj.headingCalc(goalLat, goalLong);
@@ -82,6 +83,15 @@ classdef Vehicle
             [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
             
             
+            % Compute velocity for constant true speed case
+            goal_u = convvel(4.5, 'kts', 'm/s') * sind(goalHeading);
+            goal_v = convvel(4.5, 'kts', 'm/s') * cosd(goalHeading);
+            
+            obj.motorSpeed_u = goal_u - flow_u;
+            obj.motorSpeed_v = goal_v - flow_v;
+            obj.motorSpeed = sqrt(obj.motorSpeed_u^2 + obj.motorSpeed_v^2);
+            
+            
             % Identify velocity components and add to flow components\
             if obj.motorSpeed ~= 0
                 obj.heading = goalHeading + asind(-(flowspeed/obj.motorSpeed) * sind(mod(flowheading - goalHeading, 360)));
@@ -92,6 +102,7 @@ classdef Vehicle
                 obj.speed_v = obj.motorSpeed_v + flow_v;
             else
                 % if motor speed is 0, just get pushed by flow
+                keyboard;
                 obj.speed_u = flow_u;
                 obj.speed_v = flow_v;
             end
@@ -177,25 +188,28 @@ classdef Vehicle
             %             else
             %                 speed = 0;
             %             end
+%             speed = convvel(4.5, 'kts', 'm/s');
+
+            
             
             % MPC
-            x0 = convvel(2.5, 'kts', 'm/s'); % Initial speed guess
-            
-%             A = [eye(hl); -eye(hl)];
-%             b = [length(mu)*ones(hl,1); -ones(hl,1)];
-            A = [];
-            b = [];
-            opts = optimoptions('fmincon','Display','none');
-            
-            tic
-            xOpt = fmincon(@(x) -J_ASV(x,SoC, obj.Cd, obj.boatArea, irradiance), ...
-                x0,A,b,[],[],0,convvel(4.5, 'kts', 'm/s'),[],opts);
-            
-            toc
-            
-            irradiance
-            SoC
-            speed = round(xOpt(1))
+%             x0 = convvel(2.5, 'kts', 'm/s'); % Initial speed guess
+%             
+% %             A = [eye(hl); -eye(hl)];
+% %             b = [length(mu)*ones(hl,1); -ones(hl,1)];
+%             A = [];
+%             b = [];
+%             opts = optimoptions('fmincon','Display','none');
+%             
+%             tic
+%             xOpt = fmincon(@(x) -J_ASV(x,SoC, obj.Cd, obj.boatArea, irradiance), ...
+%                 x0,A,b,[],[],0,convvel(4.5, 'kts', 'm/s'),[],opts);
+%             
+%             toc
+%             
+%             irradiance
+%             SoC
+%             speed = round(xOpt(1))
             
             % Cap speed at 4.5kts
             if speed > convvel(4.5, 'kts', 'm/s')

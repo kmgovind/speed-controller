@@ -47,28 +47,28 @@ for currentTime = domaintransect.startTime:minutes(domaintransect.timeStep):doma
         distCum(currentTime - domaintransect.startTime + 1) = distCum(currentTime - domaintransect.startTime) + distLeg(currentTime - domaintransect.startTime + 1);
     end
     % PLOT UPDATE
-    hold on;
-    
-    % plot boattransect location, goal location, and path traveled
-    plot(goal.long, goal.lat, 'r*', 'MarkerSize', 20) % Path goal
-    plot(boattransect.longitude, boattransect.latitude, 'md', 'MarkerSize', 10) % Current vehicle location
-    plot(longListTransect, latListTransect, 'r-', 'LineWidth', 2); % Path to follow
-    % set(gca, 'ydir', 'reverse')
-    axis([-76.1,-75.1,33.5,34.5]);
-    
-    % Add each timestep as image in GIF
-    drawnow
-    frame = getframe(1);
-    im = frame2im(frame);
-    [imind,cm] = rgb2ind(im,256);
-    if currentTime - domaintransect.startTime + 1 == 1
-        imwrite(imind,cm,filenametransect,'gif', 'DelayTime',0.1, 'Loopcount',inf);
-    else
-        imwrite(imind,cm,filenametransect,'gif','WriteMode','append', 'DelayTime',0.1);
-    end
-    
-    
-    clf;
+%     hold on;
+%     
+%     % plot boattransect location, goal location, and path traveled
+%     plot(goal.long, goal.lat, 'r*', 'MarkerSize', 20) % Path goal
+%     plot(boattransect.longitude, boattransect.latitude, 'md', 'MarkerSize', 10) % Current vehicle location
+%     plot(longListTransect, latListTransect, 'r-', 'LineWidth', 2); % Path to follow
+%     % set(gca, 'ydir', 'reverse')
+%     axis([-76.1,-75.1,33.5,34.5]);
+%     
+%     % Add each timestep as image in GIF
+%     drawnow
+%     frame = getframe(1);
+%     im = frame2im(frame);
+%     [imind,cm] = rgb2ind(im,256);
+%     if currentTime - domaintransect.startTime + 1 == 1
+%         imwrite(imind,cm,filenametransect,'gif', 'DelayTime',0.1, 'Loopcount',inf);
+%     else
+%         imwrite(imind,cm,filenametransect,'gif','WriteMode','append', 'DelayTime',0.1);
+%     end
+%     
+%     
+%     clf;
     
 end
 
