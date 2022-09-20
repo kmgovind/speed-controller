@@ -39,8 +39,8 @@ classdef Environment
             % Interpolate data at required time
             global currentTime
             flowTime = days(minutes(currentTime));
-            latitude = round(latitude, 2);
-            longitude = round(longitude, 2);
+%             latitude = round(latitude, 2);
+%             longitude = round(longitude, 2);
             
 %             lat_idx = find(obj.enviroData.flowlat == latitude);
 %             lon_idx = find(obj.enviroData.flowlon == longitude);
