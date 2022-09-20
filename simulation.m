@@ -8,7 +8,8 @@ wpThresh = 0.05;
 %% Transect implementation
 %Initialize Environment and Vehicles
 domaintransect = Environment; % Mission Domain
-boattransect = Vehicle(33.5,-76.1); % initialize boattransect at start lat/long
+% boattransect = Vehicle(33.5,-76.1); % initialize boattransect at start lat/long
+boattransect = Vehicle(34, -78);
 boattransect.latitude = boattransect.latitude + km2deg(5);
 boattransect.longitude = boattransect.longitude + km2deg(5);
 
@@ -54,7 +55,8 @@ for currentTime = domaintransect.startTime:minutes(domaintransect.timeStep):doma
 %     plot(boattransect.longitude, boattransect.latitude, 'md', 'MarkerSize', 10) % Current vehicle location
 %     plot(longListTransect, latListTransect, 'r-', 'LineWidth', 2); % Path to follow
 %     % set(gca, 'ydir', 'reverse')
-%     axis([-76.1,-75.1,33.5,34.5]);
+% %     axis([-76.1,-75.1,33.5,34.5]);
+%     axis([-78, -77, 34, 35]);
 %     
 %     % Add each timestep as image in GIF
 %     drawnow

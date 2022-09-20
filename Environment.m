@@ -11,13 +11,15 @@ classdef Environment
         startTime = minutes(days(1)); % Start at 1 Day
         endTime = minutes(days(60)); % End at 60 Day
         %         endTime = minutes(days(3));
-        %         latitudeRange = 32:0.01:37;
-        %         longitudeRange = -79:0.01:-74;
-        %         latitudeRange = 32.5:0.01:33.5;
-        %         longitudeRange = -78:0.01:-77;
+%                 latitudeRange = 32:0.01:37;
+%                 longitudeRange = -79:0.01:-74;
+%                 latitudeRange = 32.5:0.01:33.5;
+%                 longitudeRange = -78:0.01:-77;
 
-        latitudeRange = 33.5:0.01:34.5;
-        longitudeRange = -76.1:0.01:-75.1;
+%         latitudeRange = 33.5:0.01:34.5;
+%         longitudeRange = -76.1:0.01:-75.1;
+        latitudeRange = 34:0.01:35;
+        longitudeRange = -78:0.01:-77;
     end
 
     %% Methods
@@ -27,6 +29,7 @@ classdef Environment
             obj.enviroData.sun_t = 0:8*60:248*8*60;
             obj.enviroData.sun_ssr = mean(mean(obj.enviroData.sun_ssr));
             obj.enviroData.sun_ssr = squeeze(obj.enviroData.sun_ssr);
+            obj.enviroData.flowt = 1:numel(obj.enviroData.flowt);
         end
     end
 
@@ -36,6 +39,15 @@ classdef Environment
             % Interpolate data at required time
             global currentTime
             flowTime = days(minutes(currentTime));
+            latitude = round(latitude, 2);
+            longitude = round(longitude, 2);
+            
+%             lat_idx = find(obj.enviroData.flowlat == latitude);
+%             lon_idx = find(obj.enviroData.flowlon == longitude);
+            
+%             flow_u = interp3(obj.enviroData.u, lat_idx, lon_idx, flowTime);
+%             flow_v = interp3(obj.enviroData.v, lat_idx, lon_idx, flowTime);
+            
             flow_u = interp3(obj.enviroData.flowlat, obj.enviroData.flowlon, obj.enviroData.flowt, obj.enviroData.u, latitude, longitude, flowTime);
             flow_v = interp3(obj.enviroData.flowlat, obj.enviroData.flowlon, obj.enviroData.flowt, obj.enviroData.v, latitude, longitude, flowTime);
 

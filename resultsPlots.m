@@ -17,12 +17,17 @@ load('2022-09-19_13-30 (4.5 const, no battery constraint).mat');
 maxSpeed = distCum;
 clearvars -except const4_5 socConst mpc maxSpeed
 
+load('2022-09-20_06-00 (unconstrained basline).mat');
+baseline = distCum;
+clearvars -except const4_5 socConst mpc maxSpeed baseline
+
 %% Plot Data
 hold on;
 plot(const4_5, '-r', 'DisplayName', 'const4_5');
 plot(socConst, '-g', 'DisplayName', 'socConst');
 plot(mpc, '-b', 'DisplayName', 'mpc');
 plot(maxSpeed, '-k', 'DisplayName', 'maxSpeed');
+plot(baseline, 'DisplayName', 'baseline');
 title('Distance Traveled vs Time');
 xlabel('Time Minutes');
 ylabel('Distance Meters');
