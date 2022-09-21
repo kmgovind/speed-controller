@@ -193,23 +193,23 @@ classdef Vehicle
 
 
             % MPC
-            x0 = convvel(2.5, 'kts', 'm/s'); % Initial speed guess
-
-            %             A = [eye(hl); -eye(hl)];
-            %             b = [length(mu)*ones(hl,1); -ones(hl,1)];
+            dt = 30; % MPC Timestep (min) - max is 60
+            pred_hor = 48; % Horizon is 48 timesteps (24 hours) - min is 12
+            x0 = ones(1, pred_hor) * convvel(2.5, 'kts', 'm/s'); % Initial speed guess
             A = [];
             b = [];
+            Aeq = [];
+            beq = [];
+            lb = zeros(1, pred_hor);
+            ub = ones(1, pred_hor) * convvel(4.5, 'kts', 'm/s');
             opts = optimoptions('fmincon','Display','none');
 
-%             tic
-            xOpt = fmincon(@(x) -J_ASV(x,SoC, obj.Cd, obj.boatArea, irradiance), ...
-                x0,A,b,[],[],0,convvel(4.5, 'kts', 'm/s'),[],opts);
+            tic
+            xOpt = fmincon(@(x) -J_ASV(x, dt, SoC, obj.Cd, obj.boatArea, irradiance), ...
+                x0, A, b, Aeq, beq, lb, ub, [], opts);
+            toc
 
-%             toc
-
-%                         irradiance
-%                         SoC
-            speed = round(xOpt(1));
+            speed = round(xOpt(1))
 
             % Cap speed at 4.5kts
             if speed > convvel(4.5, 'kts', 'm/s')
@@ -222,29 +222,31 @@ classdef Vehicle
     end
 end
 
-function out = J_ASV(x,SoC, Cd, boatArea, energy_gain)
+function out = J_ASV(x, dt, SoC, Cd, boatArea, energy_gain)
 % Constants
-Dt = 30; % MPC Timestep (min)
-rho = 1025; % Density salt water (kg/m^3)
+
 speeds = [0, 2.4, 3.1, 3.83, 4.43, 4.9]; % boat speeds in kts
 speeds = convvel(speeds, 'kts', 'm/s');
 powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
 
 
-dist = Dt*sum(x*60); % Calculate possible travel distance (m) in Dt
+dist = dt*sum(x*60); % Calculate possible travel distance (m) in Dt
 % need to convert speed from m/s to m/min
 %     SoC_end = SoC - sum(0.5*boatArea*Cd*rho*x.^3) + energy_gain; % assume one hour
-SoC_end = SoC + (energy_gain - interp1(speeds, powerDraw, x)) * hours(minutes(Dt));
+SoC_end = SoC + (energy_gain - interp1(speeds, powerDraw, x)) * hours(minutes(dt));
 
 % estimate additional distance value of energy remaining after first Dt
 % assuming that we travel at the maximum possible boat speed and use up all
 % the energy without charging
-max_speed = convvel(4.5, 'kts', 'm/s');
-max_draw = interp1(speeds, powerDraw, max_speed); % power draw of max speed
-max_speed = max_speed * 60 * 60; % speed in m/hr also distance traveled in one hr
-distPerSoC = max_speed/SoC_end;
-J_stored = SoC_end*distPerSoC;
-%     J_stored = SoC_end;
+% max_speed = convvel(4.5, 'kts', 'm/s');
+% max_draw = interp1(speeds, powerDraw, max_speed); % power draw of max speed
+% max_speed = max_speed * 60 * 60; % speed in m/hr also distance traveled in one hr
+% distPerSoC = max_speed/SoC_end;
+% J_stored = SoC_end*distPerSoC; % J_stored is infinite horizon prediction
+
+
+% J_stored = SoC_end;
+J_stored = 0;
 out = dist + J_stored;
 %     keyboard
 end
