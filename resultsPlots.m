@@ -9,7 +9,7 @@ load('2022-09-21_16-41 (soc_constant).mat');
 socConst = distCum;
 clearvars -except const4_5 socConst
 
-load('2022-09-16_07-33 (MPC_Test1).mat');
+load('2022-09-22_10-42 (mpc v1).mat');
 mpc = distCum;
 clearvars -except const4_5 socConst mpc
 
@@ -17,13 +17,14 @@ load('2022-09-19_13-30 (4.5 const, no battery constraint).mat');
 maxSpeed = distCum;
 clearvars -except const4_5 socConst mpc maxSpeed
 
-load('2022-09-20_18-29 (mpc_v2).mat');
+load('2022-09-22_14-21 (mpc v2).mat');
 mpc_v2 = distCum;
 clearvars -except const4_5 socConst mpc maxSpeed mpc_v2
 
-load('2022-09-21_21-38 (mpc v1).mat');
-mpc_v1_2 = distCum;
-clearvars -except const4_5 socConst mpc maxSpeed mpc_v2 mpc_v1_2
+load('2022-09-22_18-01 (mpc v2).mat');
+mpc_v2_2 = distCum;
+clearvars -except const4_5 socConst mpc maxSpeed mpc_v2 mpc_v2_2
+
 
 
 
@@ -34,7 +35,7 @@ plot(socConst, '-g', 'DisplayName', 'Constant SoC Baseline');
 plot(mpc, '-b', 'DisplayName', 'mpc v1');
 plot(maxSpeed, '-k', 'DisplayName', 'Theoretical Best');
 plot(mpc_v2, 'DisplayName', 'mpc v2');
-plot(mpc_v1_2, 'DisplayName', 'mpc v1_2')
+plot(mpc_v2_2, 'DisplayName', 'mpc v2_2');
 title('Distance Traveled vs Time');
 xlabel('Time Minutes');
 ylabel('Distance Meters');

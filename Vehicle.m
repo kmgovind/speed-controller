@@ -60,8 +60,8 @@ classdef Vehicle
 
             % Calculate new boat speed every 30 minutes (for MPC
             % implementation)
-            if mod(currentTime, 30)
-                obj.motorSpeed = obj.velocityCalc(environment);
+            if mod(currentTime, 30) == 0
+                obj.motorSpeed = obj.velocityCalc(environment, currentTime);
             end
             %             obj.motorSpeed = obj.velocityCalc(environment);
 
@@ -73,7 +73,7 @@ classdef Vehicle
             goalHeading = obj.headingCalc(goalLat, goalLong);
 
             % Pull flow components
-            [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude); % Pull flow components from environmental data
+            [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude, currentTime); % Pull flow components from environmental data
             if isnan(flow_u)
                 flow_u = 0;
             end
@@ -126,7 +126,7 @@ classdef Vehicle
 
             motorDraw = interp1(speeds, powerDraw, obj.motorSpeed);
             %             irradiance = 0;
-            irradiance = environment.getIrradiance(); % average irradiance in w/m^2
+            irradiance = environment.getIrradiance(currentTime); % average irradiance in w/m^2
             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
 
 
@@ -149,7 +149,7 @@ classdef Vehicle
             heading = mod(180 .* atan2(flowu, flowv)./pi, 360);
         end
 
-        function speed = velocityCalc(obj, environment)
+        function speed = velocityCalc(obj, environment, currentTime)
             %             speed = ((obj.panelEfficiency*obj.panelArea*irradiance) - obj.backgroundDraw);
             %             rho_sw = 1023.6; % density of salt water
             %             numerator = (obj.panelEfficiency * obj.panelArea * irradiance - obj.backgroundDraw)*obj.motorEfficiency;
@@ -166,7 +166,7 @@ classdef Vehicle
             powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
 
             SoC = obj.charge; % current charge in wH
-            irradiance = environment.getIrradiance(); % average irradiance in w/m^2
+            irradiance = environment.getIrradiance(currentTime); % average irradiance in w/m^2
             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
 
 
@@ -205,11 +205,14 @@ classdef Vehicle
             opts = optimoptions('fmincon','Display','none');
 
 %             tic
-            xOpt = fmincon(@(x) -J_ASV(x, dt, SoC, obj.Cd, obj.boatArea, irradiance), ...
+            xOpt = fmincon(@(x) -J_ASV(x, dt, obj, environment, currentTime), ...
                 x0, A, b, Aeq, beq, lb, ub, [], opts);
 %             toc
 
             speed = round(xOpt(1));
+%             if speed == 0
+%                 keyboard
+%             end
 
             % Cap speed at 4.5kts
             if speed > convvel(4.5, 'kts', 'm/s')
@@ -222,7 +225,7 @@ classdef Vehicle
     end
 end
 
-function out = J_ASV(x, dt, SoC, Cd, boatArea, energy_gain)
+function out = J_ASV(x, dt, obj, environment, time)
 % Constants
 
 speeds = [0, 2.4, 3.1, 3.83, 4.43, 4.9]; % boat speeds in kts
@@ -230,23 +233,36 @@ speeds = convvel(speeds, 'kts', 'm/s');
 powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
 
 
-dist = dt*sum(x*60); % Calculate possible travel distance (m) in Dt
+dist = sum(dt*x*60); % Calculate possible travel distance (m) in Dt
 % need to convert speed from m/s to m/min
 %     SoC_end = SoC - sum(0.5*boatArea*Cd*rho*x.^3) + energy_gain; % assume one hour
-SoC_end = SoC + (energy_gain - interp1(speeds, powerDraw, x)) * hours(minutes(dt));
+energy_gain = environment.getIrradiance(time);
+
+% mpc v2 trial one
+for i = 1:numel(x)
+    if i == 1
+        SoC_end(i) = obj.charge + (environment.getIrradiance(time) - interp1(speeds, powerDraw, x(i))) * hours(minutes(dt));
+    else
+        SoC_end(i) = SoC_end(i-1) + (environment.getIrradiance(time + dt*(i-1)) - interp1(speeds, powerDraw, x(i))) * hours(minutes(dt));
+    end
+end
+
+
+% SoC_end = SoC + (energy_gain - interp1(speeds, powerDraw, x)) * hours(minutes(dt))
 
 % estimate additional distance value of energy remaining after first Dt
 % assuming that we travel at the maximum possible boat speed and use up all
 % the energy without charging
-% max_speed = convvel(4.5, 'kts', 'm/s');
-% max_draw = interp1(speeds, powerDraw, max_speed); % power draw of max speed
-% max_speed = max_speed * 60 * 60; % speed in m/hr also distance traveled in one hr
-% distPerSoC = max_speed/SoC_end;
-% J_stored = SoC_end*distPerSoC; % J_stored is infinite horizon prediction
+max_speed = convvel(4.5, 'kts', 'm/s');
+max_draw = interp1(speeds, powerDraw, max_speed); % power draw of max speed
+max_speed = max_speed * 60 * 60; % speed in m/hr also distance traveled in one hr
+distPerSoC = SoC_end(end)/max_draw; % number of hrs of travel at max speed based on the final amount of battery after n steps
+distPerSoC = distPerSoC * max_speed;
 
 
-% J_stored = SoC_end;
-J_stored = 0;
-out = dist + J_stored;
+J_inf = distPerSoC; % J_stored is infinite horizon prediction
+% J_stored = 0;
+% out = 0.95 * dist + 0.05 * J_stored;
+out = dist + J_inf;
 %     keyboard
 end

@@ -34,11 +34,12 @@ classdef Environment
     end
 
     methods
-        function [flow_u, flow_v] = flowComponents(obj, latitude, longitude)
+        function [flow_u, flow_v] = flowComponents(obj, latitude, longitude, time)
 
             % Interpolate data at required time
-            global currentTime
-            flowTime = days(minutes(currentTime));
+%             global currentTime
+%             flowTime = days(minutes(currentTime));
+              flowTime = days(minutes(time));
 %             latitude = round(latitude, 2);
 %             longitude = round(longitude, 2);
             
@@ -56,13 +57,13 @@ classdef Environment
             %             flow_v = convvel(flow_v, 'm/s', 'kts');
         end
 
-        function sunlight = getIrradiance(obj)
+        function sunlight = getIrradiance(obj, time)
             % find solar irradiance at given location at current time
             % Interpolate data at required time
-            global currentTime
+%             global currentTime
 %             flowTime = days(minutes(currentTime));
 %             sunlight = interp3(sort(double(obj.enviroData.sun_long)), sort(double(obj.enviroData.sun_lat)), sort(unique(double(obj.enviroData.sun_t))), double(obj.enviroData.sun_ssr), latitude, longitude, flowTime);
-            sunlight = interp1(obj.enviroData.sun_t, obj.enviroData.sun_ssr, currentTime);
+            sunlight = interp1(obj.enviroData.sun_t, obj.enviroData.sun_ssr, time);
             if isnan(sunlight)
                 sunlight = 0;
             end
