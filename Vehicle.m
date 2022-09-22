@@ -204,12 +204,12 @@ classdef Vehicle
             ub = ones(1, pred_hor) * convvel(4.5, 'kts', 'm/s');
             opts = optimoptions('fmincon','Display','none');
 
-            tic
+%             tic
             xOpt = fmincon(@(x) -J_ASV(x, dt, SoC, obj.Cd, obj.boatArea, irradiance), ...
                 x0, A, b, Aeq, beq, lb, ub, [], opts);
-            toc
+%             toc
 
-            speed = round(xOpt(1))
+            speed = round(xOpt(1));
 
             % Cap speed at 4.5kts
             if speed > convvel(4.5, 'kts', 'm/s')

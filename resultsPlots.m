@@ -21,6 +21,10 @@ load('2022-09-20_18-29 (mpc_v2).mat');
 mpc_v2 = distCum;
 clearvars -except const4_5 socConst mpc maxSpeed mpc_v2
 
+load('2022-09-21_21-38 (mpc v1).mat');
+mpc_v1_2 = distCum;
+clearvars -except const4_5 socConst mpc maxSpeed mpc_v2 mpc_v1_2
+
 
 
 %% Plot Data
@@ -30,6 +34,7 @@ plot(socConst, '-g', 'DisplayName', 'Constant SoC Baseline');
 plot(mpc, '-b', 'DisplayName', 'mpc v1');
 plot(maxSpeed, '-k', 'DisplayName', 'Theoretical Best');
 plot(mpc_v2, 'DisplayName', 'mpc v2');
+plot(mpc_v1_2, 'DisplayName', 'mpc v1_2')
 title('Distance Traveled vs Time');
 xlabel('Time Minutes');
 ylabel('Distance Meters');
