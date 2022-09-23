@@ -57,7 +57,8 @@ for currentTime = domaintransect.startTime:minutes(domaintransect.timeStep):doma
     charge_v_time(currentTime - domaintransect.startTime + 1) = boattransect.charge;
     motorspeed_v_time(currentTime - domaintransect.startTime + 1) = boattransect.motorSpeed;
     [flow_u, flow_v] = domaintransect.flowComponents(boattransect.latitude, boattransect.longitude, currentTime);
-    [perceived_flow_magnitude(currentTime - domaintransect.startTime + 1) , perceived_flow_heading(currentTime - domaintransect.startTime + 1)] = boattransect.flowHeading(flow_u, flow_v);
+    [perceived_flow_magnitude(currentTime - domaintransect.startTime + 1), flowHeading] = boattransect.flowHeading(flow_u, flow_v);
+    perceived_flow_heading(currentTime - domaintransect.startTime + 1) = (360 - boattransect.heading) + mod(flowHeading, 360);
 
     % PLOT UPDATE
 %     hold on;
