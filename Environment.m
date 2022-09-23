@@ -51,7 +51,14 @@ classdef Environment
             
             flow_u = interp3(obj.enviroData.flowlat, obj.enviroData.flowlon, obj.enviroData.flowt, obj.enviroData.u, latitude, longitude, flowTime);
             flow_v = interp3(obj.enviroData.flowlat, obj.enviroData.flowlon, obj.enviroData.flowt, obj.enviroData.v, latitude, longitude, flowTime);
-
+            
+            
+            if isnan(flow_u)
+                keyboard;
+            end
+            if isnan(flow_v)
+                keyboard;
+            end
             %             % Convert from m/s to kts
             %             flow_u = convvel(flow_u, 'm/s', 'kts');
             %             flow_v = convvel(flow_v, 'm/s', 'kts');

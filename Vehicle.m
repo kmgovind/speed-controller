@@ -60,14 +60,14 @@ classdef Vehicle
 
             % Calculate new boat speed every 30 minutes (for MPC
             % implementation)
-            if mod(currentTime, 30) == 0
-                obj.motorSpeed = obj.velocityCalc(environment, currentTime);
-            end
-            %             obj.motorSpeed = obj.velocityCalc(environment);
+%             if mod(currentTime, 30) == 0
+%                 obj.motorSpeed = obj.velocityCalc(environment, currentTime);
+%             end
+              obj.motorSpeed = obj.velocityCalc(environment, currentTime);
 
-            if obj.charge == 0
-                obj.motorSpeed = 0;
-            end
+%             if obj.charge == 0
+%                 obj.motorSpeed = 0;
+%             end
 
             % Compute heading
             goalHeading = obj.headingCalc(goalLat, goalLong);
@@ -111,8 +111,8 @@ classdef Vehicle
 
             % Calculate resulting position only if battery can handle it
             % u moves longitude; v moves latitude
-            obj.longitude = real(obj.longitude + nm2deg((obj.speed_u * hours(environment.timeStep))));
-            obj.latitude = real(obj.latitude + nm2deg((obj.speed_v * hours(environment.timeStep))));
+            obj.longitude = obj.longitude + km2deg((convvel(obj.speed_u, 'm/s', 'km/h') * hours(environment.timeStep)));
+            obj.latitude = obj.latitude + km2deg((convvel(obj.speed_v, 'm/s', 'km/h') * hours(environment.timeStep)));
 
             % Update battery state
             obj.charge = useCharge(obj, environment, currentTime);
@@ -188,31 +188,32 @@ classdef Vehicle
             %             else
             %                 speed = 0;
             %             end
-            %             speed = convvel(4.5, 'kts', 'm/s');
+                        speed = convvel(4.5, 'kts', 'm/s');
+            
 
 
 
             % MPC
-            dt = 30; % MPC Timestep (min) - max is 60
-            pred_hor = 48; % Horizon is 48 timesteps (24 hours) - min is 12
-            x0 = ones(1, pred_hor) * convvel(2.5, 'kts', 'm/s'); % Initial speed guess
-            A = [];
-            b = [];
-            Aeq = [];
-            beq = [];
-            lb = zeros(1, pred_hor);
-            ub = ones(1, pred_hor) * convvel(4.5, 'kts', 'm/s');
-            opts = optimoptions('fmincon','Display','none');
-
-%             tic
-            xOpt = fmincon(@(x) -J_ASV(x, dt, obj, environment, currentTime), ...
-                x0, A, b, Aeq, beq, lb, ub, [], opts);
-%             toc
-
-            speed = round(xOpt(1));
-%             if speed == 0
-%                 keyboard
-%             end
+%             dt = 30; % MPC Timestep (min) - max is 60
+%             pred_hor = 48; % Horizon is 48 timesteps (24 hours) - min is 12
+%             x0 = ones(1, pred_hor) * convvel(2.5, 'kts', 'm/s'); % Initial speed guess
+%             A = [];
+%             b = [];
+%             Aeq = [];
+%             beq = [];
+%             lb = zeros(1, pred_hor);
+%             ub = ones(1, pred_hor) * convvel(4.5, 'kts', 'm/s');
+%             opts = optimoptions('fmincon','Display','none');
+% 
+% %             tic
+%             xOpt = fmincon(@(x) -J_ASV(x, dt, obj, environment, currentTime), ...
+%                 x0, A, b, Aeq, beq, lb, ub, [], opts);
+% %             toc
+% 
+%             speed = xOpt(1);
+% %             if speed == 0
+% %                 keyboard
+% %             end
 
             % Cap speed at 4.5kts
             if speed > convvel(4.5, 'kts', 'm/s')
@@ -234,11 +235,20 @@ powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
 
 
 dist = sum(dt*x*60); % Calculate possible travel distance (m) in Dt
+% get flow speed from environment, add to motor speed, calculate distance
+% using true velocity
+
+% keep track of next waypoint, once you cover enough distance to cross the
+% waypoint, update your waypoint to the next one
+
 % need to convert speed from m/s to m/min
 %     SoC_end = SoC - sum(0.5*boatArea*Cd*rho*x.^3) + energy_gain; % assume one hour
 energy_gain = environment.getIrradiance(time);
 
 % mpc v2 trial one
+% Compute distance inside of this for loop
+SoC_end = zeros(numel(x) + 1, 1);
+SoC_end(1) = obj.charge;
 for i = 1:numel(x)
     if i == 1
         SoC_end(i) = obj.charge + (environment.getIrradiance(time) - interp1(speeds, powerDraw, x(i))) * hours(minutes(dt));
@@ -253,7 +263,7 @@ end
 % estimate additional distance value of energy remaining after first Dt
 % assuming that we travel at the maximum possible boat speed and use up all
 % the energy without charging
-max_speed = convvel(4.5, 'kts', 'm/s');
+max_speed = convvel(4.5, 'kts', 'm/s'); % tune this value later
 max_draw = interp1(speeds, powerDraw, max_speed); % power draw of max speed
 max_speed = max_speed * 60 * 60; % speed in m/hr also distance traveled in one hr
 distPerSoC = SoC_end(end)/max_draw; % number of hrs of travel at max speed based on the final amount of battery after n steps
