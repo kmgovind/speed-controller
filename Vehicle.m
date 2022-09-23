@@ -106,6 +106,10 @@ classdef Vehicle
                 obj.speed_u = flow_u;
                 obj.speed_v = flow_v;
             end
+            
+            if obj.speed_u == 0 && obj.speed_v == 0
+                keyboard;
+            end
 
 
 
