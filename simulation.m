@@ -21,6 +21,11 @@ longListTransect = nan(1,domaintransect.endTime - domaintransect.startTime);
 distCum = zeros(1,domaintransect.endTime - domaintransect.startTime);
 distLeg = zeros(1,domaintransect.endTime - domaintransect.startTime);
 
+% Track stuff
+charge_v_time = zeros(1, domaintransect.endTime - domaintransect.startTime);
+motorspeed_v_time = zeros(1, domaintransect.endTime - domaintransect.startTime);
+truespeed_v_time = zeros(1, domaintransect.endTime - domaintransect.startTime);
+
 % Direction Leg used to determine part of transect strategy
 % 0 - right; 1 - up; 2 - left; 3 - up
 legCount = 0;
@@ -47,6 +52,7 @@ for currentTime = domaintransect.startTime:minutes(domaintransect.timeStep):doma
     else
         distCum(currentTime - domaintransect.startTime + 1) = distCum(currentTime - domaintransect.startTime) + distLeg(currentTime - domaintransect.startTime + 1);
     end
+    charge_v_time()
     % PLOT UPDATE
 %     hold on;
 %     

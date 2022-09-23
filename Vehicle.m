@@ -65,9 +65,9 @@ classdef Vehicle
 %             end
               obj.motorSpeed = obj.velocityCalc(environment, currentTime);
 
-%             if obj.charge == 0
-%                 obj.motorSpeed = 0;
-%             end
+            if obj.charge == 0
+                obj.motorSpeed = 0;
+            end
 
             % Compute heading
             goalHeading = obj.headingCalc(goalLat, goalLong);
@@ -187,12 +187,12 @@ classdef Vehicle
 
 
             % Constant 4.5 kts
-            %             if stateOfCharge > 0
-            %                 speed = convvel(4.5, 'kts', 'm/s');
-            %             else
-            %                 speed = 0;
-            %             end
-                        speed = convvel(4.5, 'kts', 'm/s');
+                        if stateOfCharge > 0
+                            speed = convvel(4.5, 'kts', 'm/s');
+                        else
+                            speed = 0;
+                        end
+%                         speed = convvel(4.5, 'kts', 'm/s');
             
 
 
