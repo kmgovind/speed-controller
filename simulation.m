@@ -24,7 +24,9 @@ distLeg = zeros(1,domaintransect.endTime - domaintransect.startTime);
 % Track stuff
 charge_v_time = zeros(1, domaintransect.endTime - domaintransect.startTime);
 motorspeed_v_time = zeros(1, domaintransect.endTime - domaintransect.startTime);
-truespeed_v_time = zeros(1, domaintransect.endTime - domaintransect.startTime);
+% truespeed_v_time = zeros(1, domaintransect.endTime - domaintransect.startTime);
+perceived_flow_magnitude = zeros(1, domaintransect.endTime - domaintransect.startTime);
+perceived_flow_heading = zeros(1, domaintransect.endTime - domaintransect.startTime);
 
 % Direction Leg used to determine part of transect strategy
 % 0 - right; 1 - up; 2 - left; 3 - up
@@ -42,7 +44,7 @@ for currentTime = domaintransect.startTime:minutes(domaintransect.timeStep):doma
     % Move boattransect towards goal
     tempLat = boattransect.latitude;
     tempLong = boattransect.longitude;
-    boattransect = boattransect.moveBoat(domaintransect, goal.lat, goal.long, currentTime);
+    boattransect = boattransect.moveBoat(domaintransect, goal.lat, goal.long, legCount, currentTime);
     %     fprintf('\nTime: %d\tLat: %d\tLong:%d', currentTime-domaintransect.startTime+1, boattransect.latitude, boattransect.longitude);
     latListTransect(currentTime - domaintransect.startTime + 1) = boattransect.latitude;
     longListTransect(currentTime - domaintransect.startTime + 1) = boattransect.longitude;
@@ -52,7 +54,11 @@ for currentTime = domaintransect.startTime:minutes(domaintransect.timeStep):doma
     else
         distCum(currentTime - domaintransect.startTime + 1) = distCum(currentTime - domaintransect.startTime) + distLeg(currentTime - domaintransect.startTime + 1);
     end
-    charge_v_time()
+    charge_v_time(currentTime - domaintransect.startTime + 1) = boattransect.charge;
+    motorspeed_v_time(currentTime - domaintransect.startTime + 1) = boattransect.motorSpeed;
+    [flow_u, flow_v] = domaintransect.flowComponents(boattransect.latitude, boattransect.longitude, currentTime);
+    [perceived_flow_magnitude(currentTime - domaintransect.startTime + 1) , perceived_flow_heading(currentTime - domaintransect.startTime + 1)] = boattransect.flowHeading(flow_u, flow_v);
+
     % PLOT UPDATE
 %     hold on;
 %     
@@ -77,7 +83,7 @@ for currentTime = domaintransect.startTime:minutes(domaintransect.timeStep):doma
 %     
 %     
 %     clf;
-    
+%     
 end
 
 % Path over time

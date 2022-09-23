@@ -9,7 +9,8 @@ classdef Environment
         % Time
         timeStep = minutes(1);
         startTime = minutes(days(1)); % Start at 1 Day
-        endTime = minutes(days(60)); % End at 60 Day
+%         endTime = minutes(days(60)); % End at 60 Day
+        endTime = minutes(days(20));
         %         endTime = minutes(days(3));
 %                 latitudeRange = 32:0.01:37;
 %                 longitudeRange = -79:0.01:-74;
