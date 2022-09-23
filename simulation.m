@@ -1,6 +1,6 @@
 clear;clc; close all;
 % Driver Code
-
+tic
 filenametransect = 'boatMotionTransect.gif';
 global currentTime
 wpThresh = 0.05;
@@ -95,3 +95,4 @@ title('Per Leg Distance Traveled');
 figure(3);
 plot(distCum);
 title('Cumulative Distance Traveled');
+toc
