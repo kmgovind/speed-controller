@@ -60,11 +60,11 @@ classdef Vehicle
 
             % Calculate new boat speed every 30 minutes (for MPC
             % implementation)
-            %             if mod(currentTime, 60) == 0
-            %                 obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong, currentTime);
-            %             end
-            obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong,  currentTime);
-
+                        if mod(currentTime, 60) == 0
+                            obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong, currentTime);
+                        end
+%             obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong,  currentTime);
+%             
             if obj.charge == 0
                 obj.motorSpeed = 0;
             end
@@ -83,18 +83,18 @@ classdef Vehicle
             [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
 
 
-            %             % Compute velocity for constant true speed case
-            %             goal_u = convvel(4.5, 'kts', 'm/s') * sind(goalHeading);
-            %             goal_v = convvel(4.5, 'kts', 'm/s') * cosd(goalHeading);
-            %
-            %             obj.motorSpeed_u = goal_u - flow_u;
-            %             obj.motorSpeed_v = goal_v - flow_v;
-            %             obj.motorSpeed = sqrt(obj.motorSpeed_u^2 + obj.motorSpeed_v^2);
+                        % Compute velocity for constant true speed case
+%                         goal_u = convvel(4.5, 'kts', 'm/s') * sind(goalHeading);
+%                         goal_v = convvel(4.5, 'kts', 'm/s') * cosd(goalHeading);
+%             
+%                         obj.motorSpeed_u = goal_u - flow_u;
+%                         obj.motorSpeed_v = goal_v - flow_v;
+%                         obj.motorSpeed = sqrt(obj.motorSpeed_u^2 + obj.motorSpeed_v^2);
 
 
             % Identify velocity components and add to flow components\
             if obj.motorSpeed ~= 0
-                obj.heading = goalHeading + asind(-(flowspeed/obj.motorSpeed) * sind(mod(flowheading - goalHeading, 360)));
+                obj.heading = goalHeading + real(asind(-(flowspeed/obj.motorSpeed) * sind(mod(flowheading - goalHeading, 360))));
                 obj.motorSpeed_u = obj.motorSpeed * sind(obj.heading);
                 obj.motorSpeed_v = obj.motorSpeed * cosd(obj.heading);
 
@@ -179,45 +179,45 @@ classdef Vehicle
             %             speed = interp1(powerDraw, speeds, stateOfCharge);
 
             % 0 change in SoC
-            %             if irradiance >= 587
-            %                 speed = convvel(4.5, 'kts', 'm/s');
-            %             else
-            %                 speed = interp1(powerDraw, speeds, irradiance);
-            %             end
+%             if irradiance >= 587
+%                 speed = convvel(4.5, 'kts', 'm/s');
+%             else
+%                 speed = interp1(powerDraw, speeds, irradiance);
+%             end
 
 
             % Constant 4.5 kts
-            if SoC > 0
-                speed = convvel(4.5, 'kts', 'm/s');
-            else
-                speed = 0;
-            end
-            %                         speed = convvel(4.5, 'kts', 'm/s');
+%             if SoC > 0
+%                 speed = convvel(4.5, 'kts', 'm/s');
+%             else
+%                 speed = 0;
+%             end
+%               speed = convvel(4.5, 'kts', 'm/s');
 
 
 
 
             % MPC
-            %             dt = 60; % MPC Timestep (min) - max is 60
-            %             pred_hor = 12; % Horizon is 48 timesteps (24 hours) - min is 12
-            %             x0 = ones(1, pred_hor) * convvel(2.5, 'kts', 'm/s'); % Initial speed guess
-            %             A = [];
-            %             b = [];
-            %             Aeq = [];
-            %             beq = [];
-            %             lb = zeros(1, pred_hor);
-            %             ub = ones(1, pred_hor) * convvel(4.5, 'kts', 'm/s');
-            %             opts = optimoptions('fmincon','Display','none');
-            %
-            %                         tic
-            %             xOpt = fmincon(@(x) -J_ASV(x, dt, obj, environment, legCount, goalLat, goalLong, currentTime), ...
-            %                 x0, A, b, Aeq, beq, lb, ub, [], opts);
-            %                         toc
-            %
-            %             speed = xOpt(1)
-            % %             if speed == 0
-            % %                 keyboard
-            % %             end
+                        dt = 60; % MPC Timestep (min) - max is 60
+                        pred_hor = 12; % Horizon is 48 timesteps (24 hours) - min is 12
+                        x0 = ones(1, pred_hor) * convvel(2.5, 'kts', 'm/s'); % Initial speed guess
+                        A = [];
+                        b = [];
+                        Aeq = [];
+                        beq = [];
+                        lb = zeros(1, pred_hor);
+                        ub = ones(1, pred_hor) * convvel(4.5, 'kts', 'm/s');
+                        opts = optimoptions('fmincon','Display','none');
+            
+                                    tic
+                        xOpt = fmincon(@(x) -J_ASV(x, dt, obj, environment, legCount, goalLat, goalLong, currentTime), ...
+                            x0, A, b, Aeq, beq, lb, ub, [], opts);
+                                    toc
+            
+                        speed = xOpt(1)
+                        if speed == 0
+                            keyboard
+                        end
 
             % Cap speed at 4.5kts
             if speed > convvel(4.5, 'kts', 'm/s')
@@ -300,8 +300,8 @@ distPerSoC = SoC_end(end)/max_draw; % number of hrs of travel at max speed based
 distPerSoC = distPerSoC * max_speed;
 
 
-J_inf = distPerSoC; % J_stored is infinite horizon prediction
-%     J_inf = 0;
+% J_inf = distPerSoC; % J_stored is infinite horizon prediction
+    J_inf = 0;
 % out = 0.95 * dist + 0.05 * J_stored;
 out = sum(dist) + J_inf;
 %     keyboard

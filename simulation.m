@@ -58,7 +58,7 @@ for currentTime = domaintransect.startTime:minutes(domaintransect.timeStep):doma
     motorspeed_v_time(currentTime - domaintransect.startTime + 1) = boattransect.motorSpeed;
     [flow_u, flow_v] = domaintransect.flowComponents(boattransect.latitude, boattransect.longitude, currentTime);
     [perceived_flow_magnitude(currentTime - domaintransect.startTime + 1), flowHeading] = boattransect.flowHeading(flow_u, flow_v);
-    perceived_flow_heading(currentTime - domaintransect.startTime + 1) = (360 - boattransect.heading) + mod(flowHeading, 360);
+    perceived_flow_heading(currentTime - domaintransect.startTime + 1) = mod((360 - boattransect.heading) + flowHeading, 360);
 
     % PLOT UPDATE
 %     hold on;
@@ -102,10 +102,22 @@ title('Transect Path Over Time');
 saveas(gcf, 'transectpath.fig');
 
 figure(2);
-plot(distLeg);
-title('Per Leg Distance Traveled');
+plot(charge_v_time);
+title('State of Charge vs Time');
 
 figure(3);
 plot(distCum);
 title('Cumulative Distance Traveled');
+
+figure(4);
+plot(motorspeed_v_time);
+title('Motor Speed vs Time');
+
+figure(5);
+plot(perceived_flow_magnitude);
+title('Magnitude of flow speed (m/s) vs Time');
+
+figure(6);
+plot(perceived_flow_heading);
+title('Flow Heading relative to boat vs Time');
 toc
