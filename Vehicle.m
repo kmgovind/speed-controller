@@ -19,6 +19,8 @@ classdef Vehicle
 
         % Battery Details
         charge; % Vehicle's current battery charge
+        powerFit; % power as a function of speed. Output is power
+        speedFit; % speed as a function of power. Output is speed
         batteryCapacity = 6.5e3; % 6.5 kWh battery capacity
         backgroundDraw = 10; % 10W Hotel Load
 
@@ -29,6 +31,8 @@ classdef Vehicle
         % Boat dimensions/constants
         Cd = 0.0030; % Coefficient of drag
         boatArea = 5.82; % Wetted area of boat in m^2
+        
+
     end
 
 
@@ -52,7 +56,12 @@ classdef Vehicle
 
             % Instantiate Battery
             obj.charge = obj.batteryCapacity;
-
+            
+            speeds = [0, 2.4, 3.1, 3.83, 4.43, 4.9]; % boat speeds in kts
+            speeds = convvel(speeds, 'kts', 'm/s');
+            powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
+            obj.powerFit = polyfit(speeds, powerDraw, 3);
+            obj.speedFit = polyfit(powerDraw, speeds, 3);
         end
 
         function obj = moveBoat(obj, environment, goalLat, goalLong, legCount, currentTime)
@@ -60,9 +69,9 @@ classdef Vehicle
 
             % Calculate new boat speed every 30 minutes (for MPC
             % implementation)
-                        if mod(currentTime, 60) == 0
-                            obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong, currentTime);
-                        end
+            if mod(currentTime, 60) == 0
+                obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong, currentTime);
+            end
 %             obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong,  currentTime);
 %             
             if obj.charge == 0
@@ -107,12 +116,6 @@ classdef Vehicle
                 obj.speed_v = flow_v;
             end
 
-            if obj.speed_u == 0 && obj.speed_v == 0
-                keyboard;
-            end
-
-
-
             % Calculate resulting position only if battery can handle it
             % u moves longitude; v moves latitude
             obj.longitude = obj.longitude + real(km2deg((convvel(obj.speed_u, 'm/s', 'km/h') * hours(environment.timeStep))));
@@ -123,17 +126,10 @@ classdef Vehicle
 
         end
         function updatedCharge = useCharge(obj, environment, currentTime)
-            % Speed/Power Lookup Table
-            speeds = [0, 2.4, 3.1, 3.83, 4.43, 4.9]; % boat speeds in kts
-            speeds = convvel(speeds, 'kts', 'm/s');
-            powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
-
-            motorDraw = interp1(speeds, powerDraw, obj.motorSpeed);
-            %             irradiance = 0;
+            motorDraw = polyval(obj.powerFit, obj.motorSpeed); % boat power draw at given speed
             irradiance = environment.getIrradiance(currentTime); % average irradiance in w/m^2
             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
-
-
+            
             updatedCharge = obj.charge + (irradiance - motorDraw - obj.backgroundDraw) * (hours(environment.timeStep));
             if updatedCharge <= 0
                 updatedCharge = 0;
@@ -154,35 +150,15 @@ classdef Vehicle
         end
 
         function speed = velocityCalc(obj, environment, legCount, goalLat, goalLong,  currentTime)
-            %             speed = ((obj.panelEfficiency*obj.panelArea*irradiance) - obj.backgroundDraw);
-            %             rho_sw = 1023.6; % density of salt water
-            %             numerator = (obj.panelEfficiency * obj.panelArea * irradiance - obj.backgroundDraw)*obj.motorEfficiency;
-            %             denominator = (1/2)*(rho_sw) * obj.boatArea * obj.Cd;
-            %             speed = power(numerator/denominator,1/3);
-            %             speed = abs(speed);
-
-            % Strat: aim to deplete battery (using only motor power)
-            % exactly one day from current time
-
-            % Speed/Power Lookup Table
-            speeds = [0, 2.4, 3.1, 3.83, 4.43, 4.9]; % boat speeds in kts
-            speeds = convvel(speeds, 'kts', 'm/s');
-            powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
-
             SoC = obj.charge; % current charge in wH
             irradiance = environment.getIrradiance(currentTime); % average irradiance in w/m^2
             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
-
-
-            %             stateOfCharge = stateOfCharge/24; % current draw to hit goal
-            %
-            %             speed = interp1(powerDraw, speeds, stateOfCharge);
 
             % 0 change in SoC
 %             if irradiance >= 587
 %                 speed = convvel(4.5, 'kts', 'm/s');
 %             else
-%                 speed = interp1(powerDraw, speeds, irradiance);
+%                   speed = polyval(speedFit, irradiance);
 %             end
 
 
@@ -194,9 +170,6 @@ classdef Vehicle
 %             end
 %               speed = convvel(4.5, 'kts', 'm/s');
 
-
-
-
             % MPC
                         dt = 60; % MPC Timestep (min) - max is 60
                         pred_hor = 12; % Horizon is 48 timesteps (24 hours) - min is 12
@@ -207,7 +180,7 @@ classdef Vehicle
                         beq = [];
                         lb = zeros(1, pred_hor);
                         ub = ones(1, pred_hor) * convvel(4.5, 'kts', 'm/s');
-                        opts = optimoptions('fmincon','Display','none');
+                        opts = optimoptions('fmincon','MaxIterations', 10, 'Display','none');
             
                                     tic
                         xOpt = fmincon(@(x) -J_ASV(x, dt, obj, environment, legCount, goalLat, goalLong, currentTime), ...
@@ -218,6 +191,11 @@ classdef Vehicle
                         if speed == 0
                             keyboard
                         end
+                        
+            [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude, currentTime);
+            [flowspeed, ~] = obj.flowHeading(flow_u, flow_v);
+            
+            speed = max([speed, flowspeed, 1.1800])
 
             % Cap speed at 4.5kts
             if speed > convvel(4.5, 'kts', 'm/s')
@@ -231,78 +209,58 @@ classdef Vehicle
 end
 
 function out = J_ASV(x, dt, obj, environment, legCount, goalLat, goalLong, time)
-% Constants
+    % mpc v2 trial one
+    % Compute distance inside of this for loop
+    SoC_end = zeros(numel(x) + 1, 1);
+    SoC_end(1) = obj.charge;
+    dist = zeros(numel(x), 1);
+    latitude = obj.latitude;
+    longitude = obj.longitude;
+    % tic
+    for i = 1:numel(x)
+        long_start = longitude;
+        lat_start = latitude;
+        [flow_u, flow_v] = environment.flowComponents(latitude, longitude, time + dt*(i-1));
+        [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
+        goalHeading = obj.headingCalc(goalLat, goalLong, latitude, longitude);
+        heading = goalHeading + real(asind(-(flowspeed/x(i)) * sind(mod(flowheading - goalHeading, 360))));
+        motorSpeed_u = x(i) * sind(heading);
+        motorSpeed_v = x(i) * cosd(heading);
 
-speeds = [0, 2.4, 3.1, 3.83, 4.43, 4.9]; % boat speeds in kts
-speeds = convvel(speeds, 'kts', 'm/s');
-powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
-
-
-%     dist = sum(dt*x*60); % Calculate possible travel distance (m) in Dt
-% get flow speed from environment, add to motor speed, calculate distance
-% using true velocity
-
-% keep track of next waypoint, once you cover enough distance to cross the
-% waypoint, update your waypoint to the next one
-
-% need to convert speed from m/s to m/min
-%     SoC_end = SoC - sum(0.5*boatArea*Cd*rho*x.^3) + energy_gain; % assume one hour
-%     energy_gain = environment.getIrradiance(time);
-
-% mpc v2 trial one
-% Compute distance inside of this for loop
-SoC_end = zeros(numel(x) + 1, 1);
-SoC_end(1) = obj.charge;
-dist = zeros(numel(x), 1);
-latitude = obj.latitude;
-longitude = obj.longitude;
-for i = 1:numel(x)
-    long_start = longitude;
-    lat_start = latitude;
-    [flow_u, flow_v] = environment.flowComponents(latitude, longitude, time + dt*(i-1));
-    [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
-    goalHeading = obj.headingCalc(goalLat, goalLong, latitude, longitude);
-    heading = goalHeading + asind(-(flowspeed/x(i)) * sind(mod(flowheading - goalHeading, 360)));
-    motorSpeed_u = x(i) * sind(heading);
-    motorSpeed_v = x(i) * cosd(heading);
-
-    speed_u = motorSpeed_u + flow_u;
-    speed_v = motorSpeed_v + flow_v;
+        speed_u = motorSpeed_u + flow_u;
+        speed_v = motorSpeed_v + flow_v;
 
 
 
-    % Calculate resulting position only if battery can handle it
-    % u moves longitude; v moves latitude
-    longitude = longitude + real(km2deg((convvel(speed_u, 'm/s', 'km/h') * hours(minutes(dt)))));
-    latitude = latitude + real(km2deg((convvel(speed_v, 'm/s', 'km/h') * hours(minutes(dt)))));
+        % Calculate resulting position only if battery can handle it
+        % u moves longitude; v moves latitude
+        longitude = longitude + real(km2deg((convvel(speed_u, 'm/s', 'km/h') * hours(minutes(dt)))));
+        latitude = latitude + real(km2deg((convvel(speed_v, 'm/s', 'km/h') * hours(minutes(dt)))));
 
-    % Update waypoint if boat gets close enough
-    if deg2nm(distance('gc',goalLat, goalLong, latitude, longitude)) <= 2.5
-        legCount = mod(legCount + 1, 4);
-        [goalLat, goalLong] = transectWaypoint(legCount, obj, environment);
+        % Update waypoint if boat gets close enough
+        if deg2nm(distance('gc',goalLat, goalLong, latitude, longitude)) <= 2.5
+            legCount = mod(legCount + 1, 4);
+            [goalLat, goalLong] = transectWaypoint(legCount, obj, environment);
+        end
+
+        % Store distance and charge at end of each timestep
+        SoC_end(i+1) = min(6500, SoC_end(i) + (environment.getIrradiance(time + dt*(i-1)) - polyval(obj.powerFit, x(i))) * hours(minutes(dt)));
+        if SoC_end(i+1) > 0
+            dist(i) = deg2km(distance('gc', latitude, longitude, lat_start, long_start));
+        else
+            e_i = environment.getIrradiance(time + dt*(i-1));
+            dist_pred = deg2km(distance('gc', latitude, longitude, lat_start, long_start));
+            w_i = SoC_end(i) + e_i;
+            w_icmd = SoC_end(i) - SoC(i+1) + e_i;
+            dist(i) = (w_i/w_icmd) * dist_pred;
+            SoC_end(i+1) = 0;
+        end
     end
+    % toc
 
-    % Store distance and charge at end of each timestep
-    dist(i) = deg2km(distance('gc', latitude, longitude, lat_start, long_start));
-    SoC_end(i+1) = SoC_end(i) + (environment.getIrradiance(time + dt*(i-1)) - interp1(speeds, powerDraw, x(i))) * hours(minutes(dt));
-end
-
-
-% SoC_end = SoC + (energy_gain - interp1(speeds, powerDraw, x)) * hours(minutes(dt))
-
-% estimate additional distance value of energy remaining after first Dt
-% assuming that we travel at the maximum possible boat speed and use up all
-% the energy without charging
-max_speed = convvel(4.5, 'kts', 'm/s'); % tune this value later
-max_draw = interp1(speeds, powerDraw, max_speed); % power draw of max speed
-max_speed = max_speed * 60 * 60/1000; % speed in km/hr also distance traveled in one hr
-distPerSoC = SoC_end(end)/max_draw; % number of hrs of travel at max speed based on the final amount of battery after n steps
-distPerSoC = distPerSoC * max_speed;
-
-
-% J_inf = distPerSoC; % J_stored is infinite horizon prediction
-    J_inf = 0;
-% out = 0.95 * dist + 0.05 * J_stored;
-out = sum(dist) + J_inf;
-%     keyboard
+    % estimate additional distance value of energy remaining
+    t = 6; % 6 hours
+    p_avg = (SoC_end(1) - SoC_end(end))/12;
+    J_inf = t*(polyval(obj.speedFit, p_avg + (SoC_end(end)/t)) - polyval(obj.speedFit, p_avg));
+    out = sum(dist) + J_inf;
 end
