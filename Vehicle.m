@@ -92,13 +92,13 @@ classdef Vehicle
             [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
 
 
-            % Compute velocity for constant true speed case
-            goal_u = convvel(4.5, 'kts', 'm/s') * sind(goalHeading);
-            goal_v = convvel(4.5, 'kts', 'm/s') * cosd(goalHeading);
-
-            obj.motorSpeed_u = goal_u - flow_u;
-            obj.motorSpeed_v = goal_v - flow_v;
-            obj.motorSpeed = sqrt(obj.motorSpeed_u^2 + obj.motorSpeed_v^2);
+%             % Compute velocity for constant true speed case
+%             goal_u = convvel(4.5, 'kts', 'm/s') * sind(goalHeading);
+%             goal_v = convvel(4.5, 'kts', 'm/s') * cosd(goalHeading);
+% 
+%             obj.motorSpeed_u = goal_u - flow_u;
+%             obj.motorSpeed_v = goal_v - flow_v;
+%             obj.motorSpeed = sqrt(obj.motorSpeed_u^2 + obj.motorSpeed_v^2);
 
 
             % Identify velocity components and add to flow components\
@@ -169,6 +169,7 @@ classdef Vehicle
             %                 speed = 0;
             %             end
             %               speed = convvel(4.5, 'kts', 'm/s');
+            speed = convvel(2.5, 'kts', 'm/s');
 
             % MPC
             %             dt = 60; % MPC Timestep (min) - max is 60
