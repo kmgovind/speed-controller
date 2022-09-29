@@ -164,22 +164,26 @@ classdef Vehicle
             [v_transect, ~] = obj.flowHeading(flow_u, flow_v);
 
             % 0 change in SoC
-            if irradiance >= polyval(obj.powerFit, convvel(4.5, 'kts', 'm/s'))
-                speed = convvel(4.5, 'kts', 'm/s');
-            else
-                speed = polyval(obj.speedFit, irradiance);
+%             if irradiance >= polyval(obj.powerFit, convvel(4.5, 'kts', 'm/s'))
+%                 speed = convvel(4.5, 'kts', 'm/s');
+%             else
+%                 speed = polyval(obj.speedFit, irradiance);
+%             end
+%             speed = max(speed, v_transect);
+
+
+            % Constant 2.5 kts
+%             speed = convvel(2.5, 'kts', 'm/s');
+
+            % Smart constant velocity
+            v_target = convvel(2.5, 'kts', 'm/s');
+            soc_thresh = 500; 
+            if SoC - soc_thresh >= 0
+                v_soc = polyval(obj.speedFit, SoC - soc_thresh);
+            else 
+                v_soc = 0;
             end
-            speed = max(speed, v_transect);
-
-
-            % Constant 4.5 kts
-            %             if SoC > 0
-            %                 speed = convvel(4.5, 'kts', 'm/s');
-            %             else
-            %                 speed = 0;
-            %             end
-            %               speed = convvel(4.5, 'kts', 'm/s');
-            %             speed = convvel(2.5, 'kts', 'm/s');
+            speed = median([v_target, v_soc, v_transect]);
 
             % MPC
             %             dt = 60; % MPC Timestep (min) - max is 60
