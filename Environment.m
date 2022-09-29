@@ -27,7 +27,8 @@ classdef Environment
     methods (Static)
         function obj = Environment()
             obj.enviroData = load('2MonthData.mat');
-            obj.enviroData.sun_t = 0:8*60:248*8*60;
+%             obj.enviroData.sun_t = 0:8*60:248*8*60;
+            obj.enviroData.sun_t = linspace(1, minutes(days(33)), 249);
             obj.enviroData.sun_ssr = mean(mean(obj.enviroData.sun_ssr));
             obj.enviroData.sun_ssr = squeeze(obj.enviroData.sun_ssr);
             obj.enviroData.flowt = 1:numel(obj.enviroData.flowt);

@@ -192,7 +192,7 @@ classdef Vehicle
             [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude, currentTime);
             [flowspeed, ~] = obj.flowHeading(flow_u, flow_v);
             
-            speed = max([speed, flowspeed, 1.1800]);
+            speed = max([speed, flowspeed]);
 
             % Cap speed at 4.5kts
             if speed > convvel(4.5, 'kts', 'm/s')
