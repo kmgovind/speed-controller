@@ -187,15 +187,12 @@ classdef Vehicle
                             x0, A, b, Aeq, beq, lb, ub, [], opts);
                                     toc
             
-                        speed = xOpt(1)
-                        if speed == 0
-                            keyboard
-                        end
+                        speed = xOpt(1);
                         
             [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude, currentTime);
             [flowspeed, ~] = obj.flowHeading(flow_u, flow_v);
             
-            speed = max([speed, flowspeed, 1.1800])
+            speed = max([speed, flowspeed, 1.1800]);
 
             % Cap speed at 4.5kts
             if speed > convvel(4.5, 'kts', 'm/s')
@@ -251,7 +248,7 @@ function out = J_ASV(x, dt, obj, environment, legCount, goalLat, goalLong, time)
             e_i = environment.getIrradiance(time + dt*(i-1));
             dist_pred = deg2km(distance('gc', latitude, longitude, lat_start, long_start));
             w_i = SoC_end(i) + e_i;
-            w_icmd = SoC_end(i) - SoC(i+1) + e_i;
+            w_icmd = SoC_end(i) - SoC_end(i+1) + e_i;
             dist(i) = (w_i/w_icmd) * dist_pred;
             SoC_end(i+1) = 0;
         end
