@@ -31,7 +31,7 @@ classdef Vehicle
         % Boat dimensions/constants
         Cd = 0.0030; % Coefficient of drag
         boatArea = 5.82; % Wetted area of boat in m^2
-        
+
 
     end
 
@@ -56,7 +56,7 @@ classdef Vehicle
 
             % Instantiate Battery
             obj.charge = obj.batteryCapacity;
-            
+
             speeds = [0, 2.4, 3.1, 3.83, 4.43, 4.9]; % boat speeds in kts
             speeds = convvel(speeds, 'kts', 'm/s');
             powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
@@ -69,14 +69,14 @@ classdef Vehicle
 
             % Calculate new boat speed every 30 minutes (for MPC
             % implementation)
-            if mod(currentTime, 60) == 0
-                obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong, currentTime);
-            end
-%             obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong,  currentTime);
-%             
-            if obj.charge == 0
-                obj.motorSpeed = 0;
-            end
+%             if mod(currentTime, 60) == 0
+%                 obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong, currentTime);
+%             end
+            obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong,  currentTime);
+            %
+%             if obj.charge == 0
+%                 obj.motorSpeed = 0;
+%             end
 
             % Compute heading
             goalHeading = obj.headingCalc(goalLat, goalLong, obj.latitude, obj.longitude);
@@ -92,13 +92,13 @@ classdef Vehicle
             [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
 
 
-                        % Compute velocity for constant true speed case
-%                         goal_u = convvel(4.5, 'kts', 'm/s') * sind(goalHeading);
-%                         goal_v = convvel(4.5, 'kts', 'm/s') * cosd(goalHeading);
-%             
-%                         obj.motorSpeed_u = goal_u - flow_u;
-%                         obj.motorSpeed_v = goal_v - flow_v;
-%                         obj.motorSpeed = sqrt(obj.motorSpeed_u^2 + obj.motorSpeed_v^2);
+            % Compute velocity for constant true speed case
+            goal_u = convvel(4.5, 'kts', 'm/s') * sind(goalHeading);
+            goal_v = convvel(4.5, 'kts', 'm/s') * cosd(goalHeading);
+
+            obj.motorSpeed_u = goal_u - flow_u;
+            obj.motorSpeed_v = goal_v - flow_v;
+            obj.motorSpeed = sqrt(obj.motorSpeed_u^2 + obj.motorSpeed_v^2);
 
 
             % Identify velocity components and add to flow components\
@@ -129,13 +129,13 @@ classdef Vehicle
             motorDraw = polyval(obj.powerFit, obj.motorSpeed); % boat power draw at given speed
             irradiance = environment.getIrradiance(currentTime); % average irradiance in w/m^2
             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
-            
+
             updatedCharge = obj.charge + (irradiance - motorDraw - obj.backgroundDraw) * (hours(environment.timeStep));
-            if updatedCharge <= 0
-                updatedCharge = 0;
-            elseif updatedCharge >= obj.batteryCapacity
-                updatedCharge = obj.batteryCapacity;
-            end
+%             if updatedCharge <= 0
+%                 updatedCharge = 0;
+%             elseif updatedCharge >= obj.batteryCapacity
+%                 updatedCharge = obj.batteryCapacity;
+%             end
         end
 
         function heading = headingCalc(obj, goalLat, goalLong, latitude, longitude)
@@ -155,44 +155,44 @@ classdef Vehicle
             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
 
             % 0 change in SoC
-%             if irradiance >= 587
-%                 speed = convvel(4.5, 'kts', 'm/s');
-%             else
-%                   speed = polyval(speedFit, irradiance);
-%             end
+            %             if irradiance >= 587
+            %                 speed = convvel(4.5, 'kts', 'm/s');
+            %             else
+            %                   speed = polyval(speedFit, irradiance);
+            %             end
 
 
             % Constant 4.5 kts
-%             if SoC > 0
-%                 speed = convvel(4.5, 'kts', 'm/s');
-%             else
-%                 speed = 0;
-%             end
-%               speed = convvel(4.5, 'kts', 'm/s');
+            %             if SoC > 0
+            %                 speed = convvel(4.5, 'kts', 'm/s');
+            %             else
+            %                 speed = 0;
+            %             end
+            %               speed = convvel(4.5, 'kts', 'm/s');
 
             % MPC
-                        dt = 60; % MPC Timestep (min) - max is 60
-                        pred_hor = 12; % Horizon is 48 timesteps (24 hours) - min is 12
-                        x0 = ones(1, pred_hor) * convvel(2.5, 'kts', 'm/s'); % Initial speed guess
-                        A = [];
-                        b = [];
-                        Aeq = [];
-                        beq = [];
-                        lb = zeros(1, pred_hor);
-                        ub = ones(1, pred_hor) * convvel(4.5, 'kts', 'm/s');
-                        opts = optimoptions('fmincon','MaxIterations', 10, 'Display','none');
-            
-                                    tic
-                        xOpt = fmincon(@(x) -J_ASV(x, dt, obj, environment, legCount, goalLat, goalLong, currentTime), ...
-                            x0, A, b, Aeq, beq, lb, ub, [], opts);
-                                    toc
-            
-                        speed = xOpt(1);
-                        
-            [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude, currentTime);
-            [flowspeed, ~] = obj.flowHeading(flow_u, flow_v);
-            
-            speed = max([speed, flowspeed]);
+            %             dt = 60; % MPC Timestep (min) - max is 60
+            %             pred_hor = 12; % Horizon is 48 timesteps (24 hours) - min is 12
+            %             x0 = ones(1, pred_hor) * convvel(2.5, 'kts', 'm/s'); % Initial speed guess
+            %             A = [];
+            %             b = [];
+            %             Aeq = [];
+            %             beq = [];
+            %             lb = zeros(1, pred_hor);
+            %             ub = ones(1, pred_hor) * convvel(4.5, 'kts', 'm/s');
+            %             opts = optimoptions('fmincon','MaxIterations', 10, 'Display','none');
+            %
+            %             tic
+            %             xOpt = fmincon(@(x) -J_ASV(x, dt, obj, environment, legCount, goalLat, goalLong, currentTime), ...
+            %                 x0, A, b, Aeq, beq, lb, ub, [], opts);
+            %             toc
+            %
+            %             speed = xOpt(1);
+            %
+            %             [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude, currentTime);
+            %             [flowspeed, ~] = obj.flowHeading(flow_u, flow_v);
+            %
+            %             speed = max([speed, flowspeed]);
 
             % Cap speed at 4.5kts
             if speed > convvel(4.5, 'kts', 'm/s')
@@ -206,58 +206,58 @@ classdef Vehicle
 end
 
 function out = J_ASV(x, dt, obj, environment, legCount, goalLat, goalLong, time)
-    % mpc v2 trial one
-    % Compute distance inside of this for loop
-    SoC_end = zeros(numel(x) + 1, 1);
-    SoC_end(1) = obj.charge;
-    dist = zeros(numel(x), 1);
-    latitude = obj.latitude;
-    longitude = obj.longitude;
-    % tic
-    for i = 1:numel(x)
-        long_start = longitude;
-        lat_start = latitude;
-        [flow_u, flow_v] = environment.flowComponents(latitude, longitude, time + dt*(i-1));
-        [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
-        goalHeading = obj.headingCalc(goalLat, goalLong, latitude, longitude);
-        heading = goalHeading + real(asind(-(flowspeed/x(i)) * sind(mod(flowheading - goalHeading, 360))));
-        motorSpeed_u = x(i) * sind(heading);
-        motorSpeed_v = x(i) * cosd(heading);
+% mpc v2 trial one
+% Compute distance inside of this for loop
+SoC_end = zeros(numel(x) + 1, 1);
+SoC_end(1) = obj.charge;
+dist = zeros(numel(x), 1);
+latitude = obj.latitude;
+longitude = obj.longitude;
+% tic
+for i = 1:numel(x)
+    long_start = longitude;
+    lat_start = latitude;
+    [flow_u, flow_v] = environment.flowComponents(latitude, longitude, time + dt*(i-1));
+    [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
+    goalHeading = obj.headingCalc(goalLat, goalLong, latitude, longitude);
+    heading = goalHeading + real(asind(-(flowspeed/x(i)) * sind(mod(flowheading - goalHeading, 360))));
+    motorSpeed_u = x(i) * sind(heading);
+    motorSpeed_v = x(i) * cosd(heading);
 
-        speed_u = motorSpeed_u + flow_u;
-        speed_v = motorSpeed_v + flow_v;
+    speed_u = motorSpeed_u + flow_u;
+    speed_v = motorSpeed_v + flow_v;
 
 
 
-        % Calculate resulting position only if battery can handle it
-        % u moves longitude; v moves latitude
-        longitude = longitude + real(km2deg((convvel(speed_u, 'm/s', 'km/h') * hours(minutes(dt)))));
-        latitude = latitude + real(km2deg((convvel(speed_v, 'm/s', 'km/h') * hours(minutes(dt)))));
+    % Calculate resulting position only if battery can handle it
+    % u moves longitude; v moves latitude
+    longitude = longitude + real(km2deg((convvel(speed_u, 'm/s', 'km/h') * hours(minutes(dt)))));
+    latitude = latitude + real(km2deg((convvel(speed_v, 'm/s', 'km/h') * hours(minutes(dt)))));
 
-        % Update waypoint if boat gets close enough
-        if deg2nm(distance('gc',goalLat, goalLong, latitude, longitude)) <= 2.5
-            legCount = mod(legCount + 1, 4);
-            [goalLat, goalLong] = transectWaypoint(legCount, obj, environment);
-        end
-
-        % Store distance and charge at end of each timestep
-        SoC_end(i+1) = min(6500, SoC_end(i) + (environment.getIrradiance(time + dt*(i-1)) - polyval(obj.powerFit, x(i))) * hours(minutes(dt)));
-        if SoC_end(i+1) > 0
-            dist(i) = deg2km(distance('gc', latitude, longitude, lat_start, long_start));
-        else
-            e_i = environment.getIrradiance(time + dt*(i-1));
-            dist_pred = deg2km(distance('gc', latitude, longitude, lat_start, long_start));
-            w_i = SoC_end(i) + e_i;
-            w_icmd = SoC_end(i) - SoC_end(i+1) + e_i;
-            dist(i) = (w_i/w_icmd) * dist_pred;
-            SoC_end(i+1) = 0;
-        end
+    % Update waypoint if boat gets close enough
+    if deg2nm(distance('gc',goalLat, goalLong, latitude, longitude)) <= 2.5
+        legCount = mod(legCount + 1, 4);
+        [goalLat, goalLong] = transectWaypoint(legCount, obj, environment);
     end
-    % toc
 
-    % estimate additional distance value of energy remaining
-    t = 6; % 6 hours
-    p_avg = (SoC_end(1) - SoC_end(end))/12;
-    J_inf = t*(polyval(obj.speedFit, p_avg + (SoC_end(end)/t)) - polyval(obj.speedFit, p_avg));
-    out = sum(dist) + J_inf;
+    % Store distance and charge at end of each timestep
+    SoC_end(i+1) = min(6500, SoC_end(i) + (environment.getIrradiance(time + dt*(i-1)) - polyval(obj.powerFit, x(i))) * hours(minutes(dt)));
+    if SoC_end(i+1) > 0
+        dist(i) = deg2km(distance('gc', latitude, longitude, lat_start, long_start));
+    else
+        e_i = environment.getIrradiance(time + dt*(i-1));
+        dist_pred = deg2km(distance('gc', latitude, longitude, lat_start, long_start));
+        w_i = SoC_end(i) + e_i;
+        w_icmd = SoC_end(i) - SoC_end(i+1) + e_i;
+        dist(i) = (w_i/w_icmd) * dist_pred;
+        SoC_end(i+1) = 0;
+    end
+end
+% toc
+
+% estimate additional distance value of energy remaining
+t = 6; % 6 hours
+p_avg = (SoC_end(1) - SoC_end(end))/12;
+J_inf = t*(polyval(obj.speedFit, p_avg + (SoC_end(end)/t)) - polyval(obj.speedFit, p_avg));
+out = sum(dist) + J_inf;
 end
