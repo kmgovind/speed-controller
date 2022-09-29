@@ -69,14 +69,14 @@ classdef Vehicle
 
             % Calculate new boat speed every 30 minutes (for MPC
             % implementation)
-%             if mod(currentTime, 60) == 0
-%                 obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong, currentTime);
-%             end
+            %             if mod(currentTime, 60) == 0
+            %                 obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong, currentTime);
+            %             end
             obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong,  currentTime);
             %
-%             if obj.charge == 0
-%                 obj.motorSpeed = 0;
-%             end
+            if obj.charge == 0
+                obj.motorSpeed = 0;
+            end
 
             % Compute heading
             goalHeading = obj.headingCalc(goalLat, goalLong, obj.latitude, obj.longitude);
@@ -92,13 +92,13 @@ classdef Vehicle
             [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
 
 
-%             % Compute velocity for constant true speed case
-%             goal_u = convvel(4.5, 'kts', 'm/s') * sind(goalHeading);
-%             goal_v = convvel(4.5, 'kts', 'm/s') * cosd(goalHeading);
-% 
-%             obj.motorSpeed_u = goal_u - flow_u;
-%             obj.motorSpeed_v = goal_v - flow_v;
-%             obj.motorSpeed = sqrt(obj.motorSpeed_u^2 + obj.motorSpeed_v^2);
+            %             % Compute velocity for constant true speed case
+            %             goal_u = convvel(4.5, 'kts', 'm/s') * sind(goalHeading);
+            %             goal_v = convvel(4.5, 'kts', 'm/s') * cosd(goalHeading);
+            %
+            %             obj.motorSpeed_u = goal_u - flow_u;
+            %             obj.motorSpeed_v = goal_v - flow_v;
+            %             obj.motorSpeed = sqrt(obj.motorSpeed_u^2 + obj.motorSpeed_v^2);
 
 
             % Identify velocity components and add to flow components\
@@ -131,11 +131,11 @@ classdef Vehicle
             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
 
             updatedCharge = obj.charge + (irradiance - motorDraw - obj.backgroundDraw) * (hours(environment.timeStep));
-%             if updatedCharge <= 0
-%                 updatedCharge = 0;
-%             elseif updatedCharge >= obj.batteryCapacity
-%                 updatedCharge = obj.batteryCapacity;
-%             end
+            if updatedCharge <= 0
+                updatedCharge = 0;
+            elseif updatedCharge >= obj.batteryCapacity
+                updatedCharge = obj.batteryCapacity;
+            end
         end
 
         function heading = headingCalc(obj, goalLat, goalLong, latitude, longitude)
@@ -153,13 +153,23 @@ classdef Vehicle
             SoC = obj.charge; % current charge in wH
             irradiance = environment.getIrradiance(currentTime); % average irradiance in w/m^2
             irradiance = irradiance * obj.panelArea * obj.panelEfficiency; % getting wattage for solar panel generation
+            % Pull flow components
+            [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude, currentTime); % Pull flow components from environmental data
+            if isnan(flow_u)
+                flow_u = 0;
+            end
+            if isnan(flow_v)
+                flow_v = 0;
+            end
+            [v_transect, ~] = obj.flowHeading(flow_u, flow_v);
 
             % 0 change in SoC
-            %             if irradiance >= 587
-            %                 speed = convvel(4.5, 'kts', 'm/s');
-            %             else
-            %                   speed = polyval(speedFit, irradiance);
-            %             end
+            if irradiance >= polyval(obj.powerFit, convvel(4.5, 'kts', 'm/s'))
+                speed = convvel(4.5, 'kts', 'm/s');
+            else
+                speed = polyval(obj.speedFit, irradiance);
+            end
+            speed = max(speed, v_transect);
 
 
             % Constant 4.5 kts
@@ -169,7 +179,7 @@ classdef Vehicle
             %                 speed = 0;
             %             end
             %               speed = convvel(4.5, 'kts', 'm/s');
-            speed = convvel(2.5, 'kts', 'm/s');
+            %             speed = convvel(2.5, 'kts', 'm/s');
 
             % MPC
             %             dt = 60; % MPC Timestep (min) - max is 60
