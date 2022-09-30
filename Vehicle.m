@@ -185,7 +185,7 @@ classdef Vehicle
 
             v_target = 2.1938;
 
-            if irradiance >= 587
+            if SoC >= 0.9*(obj.batteryCapacity)
                speed = convvel(4.5, 'kts', 'm/s');
             else
                 speed = max(v_target, vbmin);
