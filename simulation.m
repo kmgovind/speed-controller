@@ -98,6 +98,7 @@ surface([x;x],[y;y],[z;z],[col;col],...
     'edgecol','interp',...
      'linew',2);
 axis([-78,-77,34,35]);
+% axis([-76.1, -75.1, 33.5, 34.5]);
 title('Transect Path Over Time');
 saveas(gcf, 'transectpath.fig');
 
