@@ -160,19 +160,36 @@ classdef Vehicle
             end
             [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
 
-            % Constant SoC Benchmark
-            v_min = 0.5; % min true speed m/s
-            % Compute velocity for constant true speed case
+%             % Constant SoC Benchmark
+%             v_min = 0.5; % min true speed m/s
+%             % Compute velocity for constant true speed case
+%             goal_u = v_min * sind(goalHeading);
+%             goal_v = v_min * cosd(goalHeading);
+% 
+%             vbmin_u = goal_u - flow_u;
+%             vbmin_v = goal_v - flow_v;
+%             vbmin = sqrt(vbmin_u^2 + vbmin_v^2);
+%             
+%             v_pb = polyval(obj.speedFit, irradiance);
+% 
+%             speed = max(v_pb, vbmin);
+
+            % Constant Relative Velocity
+            v_min = 0; % min true speed m/s
             goal_u = v_min * sind(goalHeading);
             goal_v = v_min * cosd(goalHeading);
 
             vbmin_u = goal_u - flow_u;
             vbmin_v = goal_v - flow_v;
             vbmin = sqrt(vbmin_u^2 + vbmin_v^2);
-            
-            v_pb = polyval(obj.speedFit, irradiance);
 
-            speed = max(v_pb, vbmin);
+            v_target = 2.1938;
+
+            if irradiance >= 587
+               speed = convvel(4.5, 'kts', 'm/s');
+            else
+                speed = max(v_target, vbmin);
+            end
 
 
             % 0 change in SoC
