@@ -31,10 +31,11 @@ classdef Vehicle
         % Boat dimensions/constants
         Cd = 0.0030; % Coefficient of drag
         boatArea = 5.82; % Wetted area of boat in m^2
-        
+
         %soc lookup
         sched_times;
         target_soc;
+        p_avg_lookup;
 
     end
 
@@ -69,11 +70,13 @@ classdef Vehicle
             p_data = load('soc_lookup.mat');
             obj.sched_times= p_data.sched_times;
             obj.target_soc = p_data.target_soc;
+            p_data = load('p_avg_lookup.mat');
+            obj.p_avg_lookup = p_data.p_avg;
+
         end
 
         function obj = moveBoat(obj, environment, goalLat, goalLong, legCount, currentTime)
             %obj is the current boat we are moving
-
             % Compute heading
             goalHeading = obj.headingCalc(goalLat, goalLong, obj.latitude, obj.longitude);
 
@@ -91,10 +94,10 @@ classdef Vehicle
 
             % Calculate new boat speed every 30 minutes (for MPC
             % implementation)
-            %             if mod(currentTime, 60) == 0
-            %                 obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong, currentTime);
-            %             end
-            obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong,  currentTime);
+            if mod(currentTime, 60) == 0
+                obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong, currentTime);
+            end
+            %             obj.motorSpeed = obj.velocityCalc(environment, legCount, goalLat, goalLong,  currentTime);
 
             if obj.charge == 0
                 obj.motorSpeed = 0;
@@ -165,99 +168,100 @@ classdef Vehicle
             if isnan(flow_v)
                 flow_v = 0;
             end
+
             [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
 
-%             % Constant SoC Benchmark
-%             v_min = 0.5; % min true speed m/s
-%             % Compute velocity for constant true speed case
-%             goal_u = v_min * sind(goalHeading);
-%             goal_v = v_min * cosd(goalHeading);
-% 
-%             vbmin_u = goal_u - flow_u;
-%             vbmin_v = goal_v - flow_v;
-%             vbmin = sqrt(vbmin_u^2 + vbmin_v^2);
-%             
-%             v_pb = polyval(obj.speedFit, irradiance);
-% 
-%             speed = max(v_pb, vbmin);
 
-            % Constant Relative Velocity
-%             v_min = 0; % min true speed m/s
-%             goal_u = v_min * sind(goalHeading);
-%             goal_v = v_min * cosd(goalHeading);
-% 
-%             vbmin_u = goal_u - flow_u;
-%             vbmin_v = goal_v - flow_v;
-%             vbmin = sqrt(vbmin_u^2 + vbmin_v^2);
-% 
-%             v_target = 2.1938;
-% 
-%             if SoC >= 0.9*(obj.batteryCapacity)
-%                speed = convvel(4.5, 'kts', 'm/s');
-%             else
-%                 speed = max(v_target, vbmin);
-%             end
-            
-            % Prescribed SoC
-            v_pb = polyval(obj.speedFit, irradiance);
-            k = 0.75;
-            soc_target = interp1(obj.sched_times, obj.target_soc, currentTime); % find target SoC
-            if (SoC - soc_target) > 0
-                v_des = polyval(obj.speedFit, k*(SoC - soc_target));
-            else
-                v_des = 0;
-            end
-            speed = v_pb + v_des;
+            %             [flowspeed, flowheading] = obj.flowHeading(flow_u, flow_v);
+            v_min = 1.5; % min true speed m/s
+            % Compute velocity for constant true speed case
+            goal_u = v_min * sind(goalHeading);
+            goal_v = v_min * cosd(goalHeading);
 
+            vbmin_u = goal_u - flow_u;
+            vbmin_v = goal_v - flow_v;
+            vbmin = sqrt(vbmin_u^2 + vbmin_v^2);
             % 0 change in SoC
-            %             if irradiance >= polyval(obj.powerFit, convvel(4.5, 'kts', 'm/s'))
+            %             if irradiance >= 587
             %                 speed = convvel(4.5, 'kts', 'm/s');
             %             else
-            %                 speed = polyval(obj.speedFit, irradiance);
+            %                   speed = polyval(speedFit, irradiance);
             %             end
-            %             speed = max(speed, v_transect);
 
+            %             % Constant SoC Benchmark
+            %             v_min = 0.5; % min true speed m/s
+            %             % Compute velocity for constant true speed case
+            %             goal_u = v_min * sind(goalHeading);
+            %             goal_v = v_min * cosd(goalHeading);
+            %
+            %             vbmin_u = goal_u - flow_u;
+            %             vbmin_v = goal_v - flow_v;
+            %             vbmin = sqrt(vbmin_u^2 + vbmin_v^2);
+            %
+            %             v_pb = polyval(obj.speedFit, irradiance);
+            %
+            %             speed = max(v_pb, vbmin);
 
-            % Constant 2.5 kts
-            %             speed = convvel(2.5, 'kts', 'm/s');
+            % Constant Relative Velocity
+            %             v_min = 0; % min true speed m/s
+            %             goal_u = v_min * sind(goalHeading);
+            %             goal_v = v_min * cosd(goalHeading);
+            %
+            %             vbmin_u = goal_u - flow_u;
+            %             vbmin_v = goal_v - flow_v;
+            %             vbmin = sqrt(vbmin_u^2 + vbmin_v^2);
+            %
+            %             v_target = 2.1938;
+            %
+            %             if SoC >= 0.9*(obj.batteryCapacity)
+            %                speed = convvel(4.5, 'kts', 'm/s');
+            %             else
+            %                 speed = max(v_target, vbmin);
+            %             end
+
+            % Prescribed SoC
+            %             v_pb = polyval(obj.speedFit, irradiance);
+            %             k = 0.75;
+            %             soc_target = interp1(obj.sched_times, obj.target_soc, currentTime); % find target SoC
+            %             if (SoC - soc_target) > 0
+            %                 v_des = polyval(obj.speedFit, k*(SoC - soc_target));
+            %             else
+            %                 v_des = 0;
+            %             end
+            %             speed = v_pb + v_des;
+
 
             % Constant 4.5 kts
-            %             speed = convvel(4.5, 'kts', 'm/s');
-            %              speed = 2.1938;
-
-            % Smart constant velocity
-            %             v_target = 2.1938;
-            %             soc_thresh = 500;
-            %             if SoC - soc_thresh >= 0
-            %                 v_soc = polyval(obj.speedFit, SoC - soc_thresh);
+            %             if SoC > 0
+            %                 speed = convvel(4.5, 'kts', 'm/s');
             %             else
-            %                 v_soc = 0;
+            %                 speed = 0;
             %             end
-            %             speed = median([v_target, v_soc, v_transect]);
+            %               speed = convvel(4.5, 'kts', 'm/s');
 
             % MPC
-            %             dt = 60; % MPC Timestep (min) - max is 60
-            %             pred_hor = 12; % Horizon is 48 timesteps (24 hours) - min is 12
-            %             x0 = ones(1, pred_hor) * convvel(2.5, 'kts', 'm/s'); % Initial speed guess
-            %             A = [];
-            %             b = [];
-            %             Aeq = [];
-            %             beq = [];
-            %             lb = zeros(1, pred_hor);
-            %             ub = ones(1, pred_hor) * convvel(4.5, 'kts', 'm/s');
-            %             opts = optimoptions('fmincon','MaxIterations', 10, 'Display','none');
-            %
-            %             tic
-            %             xOpt = fmincon(@(x) -J_ASV(x, dt, obj, environment, legCount, goalLat, goalLong, currentTime), ...
-            %                 x0, A, b, Aeq, beq, lb, ub, [], opts);
-            %             toc
-            %
-            %             speed = xOpt(1);
-            %
-            %             [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude, currentTime);
-            %             [flowspeed, ~] = obj.flowHeading(flow_u, flow_v);
-            %
-            %             speed = max([speed, flowspeed]);
+            dt = 60; % MPC Timestep (min) - max is 60
+            pred_hor = 12; % Horizon is 48 timesteps (24 hours) - min is 12
+            x0 = ones(1, pred_hor) * convvel(2.5, 'kts', 'm/s'); % Initial speed guess
+            A = [];
+            b = [];
+            Aeq = [];
+            beq = [];
+            lb = zeros(1, pred_hor);
+            ub = ones(1, pred_hor) * convvel(4.5, 'kts', 'm/s');
+            opts = optimoptions('fmincon','MaxIterations', 10, 'Display','none');
+
+            tic
+            xOpt = fmincon(@(x) -J_ASV(x, dt, obj, environment, legCount, goalLat, goalLong, currentTime), ...
+                x0, A, b, Aeq, beq, lb, ub, [], opts);
+            toc
+
+            speed = xOpt(1);
+
+            [flow_u, flow_v] = environment.flowComponents(obj.latitude, obj.longitude, currentTime);
+            [flowspeed, ~] = obj.flowHeading(flow_u, flow_v);
+
+            speed = max([speed, vbmin]);
 
             % Cap speed at 4.5kts
             if speed > convvel(4.5, 'kts', 'm/s')
@@ -292,8 +296,6 @@ for i = 1:numel(x)
     speed_u = motorSpeed_u + flow_u;
     speed_v = motorSpeed_v + flow_v;
 
-
-
     % Calculate resulting position only if battery can handle it
     % u moves longitude; v moves latitude
     longitude = longitude + real(km2deg((convvel(speed_u, 'm/s', 'km/h') * hours(minutes(dt)))));
@@ -318,11 +320,43 @@ for i = 1:numel(x)
         SoC_end(i+1) = 0;
     end
 end
+
+% Store distance and charge at end of each timestep
+SoC_end(i+1) = min(6500, SoC_end(i) + (environment.getIrradiance(time + dt*(i-1)) - polyval(obj.powerFit, x(i))) * hours(minutes(dt)));
+if SoC_end(i+1) > 0
+    dist(i) = deg2km(distance('gc', latitude, longitude, lat_start, long_start));
+else
+    e_i = environment.getIrradiance(time + dt*(i-1));
+    dist_pred = deg2km(distance('gc', latitude, longitude, lat_start, long_start));
+    w_i = SoC_end(i) + e_i;
+    w_icmd = SoC_end(i) - SoC_end(i+1) + e_i;
+    dist(i) = (w_i/w_icmd) * dist_pred;
+    SoC_end(i+1) = 0;
+end
+
 % toc
 
 % estimate additional distance value of energy remaining
 t = 6; % 6 hours
+% mpcTime = hours(minutes(time));
+
 p_avg = (SoC_end(1) - SoC_end(end))/12;
-J_inf = t*(polyval(obj.speedFit, p_avg + (SoC_end(end)/t)) - polyval(obj.speedFit, p_avg));
+J_inf = seconds(hours(t))*(polyval(obj.speedFit, p_avg + (SoC_end(end)/t)) - polyval(obj.speedFit, p_avg));
+J_inf = J_inf/1000;
+J_inf = min([J_inf, sum(dist)]);
+
+% Scheduled J_inf
+% J_inf = 0; % initialize J_inf value
+% temp_SoC = SoC_end(end);
+% for i = 1:t
+%     if mpcTime + i > 456
+%         p_avg = obj.p_avg_lookup(end);
+%     else
+%         p_avg = obj.p_avg_lookup(mpcTime + i);
+%     end
+%     J_inf = J_inf + seconds(hours(1)) * (polyval(obj.speedFit, p_avg + temp_SoC) - polyval(obj.speedFit, p_avg));
+%     temp_SoC = temp_SoC - p_avg;
+% end
+
 out = sum(dist) + J_inf;
 end
