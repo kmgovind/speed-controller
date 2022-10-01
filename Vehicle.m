@@ -32,6 +32,7 @@ classdef Vehicle
         Cd = 0.0030; % Coefficient of drag
         boatArea = 5.82; % Wetted area of boat in m^2
         
+        p_avg_lookup;
 
     end
 
@@ -62,6 +63,9 @@ classdef Vehicle
             powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
             obj.powerFit = polyfit(speeds, powerDraw, 3);
             obj.speedFit = polyfit(powerDraw, speeds, 3);
+            
+            p_data = load('p_avg_lookup.mat');
+            obj.p_avg_lookup = p_data.p_avg;
         end
 
         function obj = moveBoat(obj, environment, goalLat, goalLong, legCount, currentTime)
@@ -257,7 +261,23 @@ function out = J_ASV(x, dt, obj, environment, legCount, goalLat, goalLong, time)
 
     % estimate additional distance value of energy remaining
     t = 6; % 6 hours
-    p_avg = (SoC_end(1) - SoC_end(end))/12;
-    J_inf = t*(polyval(obj.speedFit, p_avg + (SoC_end(end)/t)) - polyval(obj.speedFit, p_avg));
+    mpcTime = hours(minutes(time));
+    
+%     p_avg = (SoC_end(1) - SoC_end(end))/12;
+%     J_inf = t*(polyval(obj.speedFit, p_avg + (SoC_end(end)/t)) - polyval(obj.speedFit, p_avg));
+    % Scheduled J_inf
+    J_inf = 0; % initialize J_inf value
+    temp_SoC = SoC_end(end);
+    for i = 1:t
+        if mpcTime + i > 456
+            p_avg = obj.p_avg_lookup(end);
+        else
+            p_avg = obj.p_avg_lookup(mpcTime + i);
+        end
+        J_inf = J_inf + seconds(hours(1)) * (polyval(obj.speedFit, p_avg + temp_SoC) - polyval(obj.speedFit, p_avg));
+        temp_SoC = temp_SoC - p_avg;
+    end
+    
+    
     out = sum(dist) + J_inf;
 end
