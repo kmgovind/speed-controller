@@ -31,7 +31,10 @@ classdef Vehicle
         % Boat dimensions/constants
         Cd = 0.0030; % Coefficient of drag
         boatArea = 5.82; % Wetted area of boat in m^2
-
+        
+        %soc lookup
+        sched_times;
+        target_soc;
 
     end
 
@@ -62,6 +65,10 @@ classdef Vehicle
             powerDraw = [0, 62, 115, 235, 404, 587]; % corresponding wattage
             obj.powerFit = polyfit(speeds, powerDraw, 3);
             obj.speedFit = polyfit(powerDraw, speeds, 3);
+
+            p_data = load('soc_lookup.mat');
+            obj.sched_times= p_data.sched_times;
+            obj.target_soc = p_data.target_soc;
         end
 
         function obj = moveBoat(obj, environment, goalLat, goalLong, legCount, currentTime)
@@ -175,22 +182,32 @@ classdef Vehicle
 %             speed = max(v_pb, vbmin);
 
             % Constant Relative Velocity
-            v_min = 0; % min true speed m/s
-            goal_u = v_min * sind(goalHeading);
-            goal_v = v_min * cosd(goalHeading);
-
-            vbmin_u = goal_u - flow_u;
-            vbmin_v = goal_v - flow_v;
-            vbmin = sqrt(vbmin_u^2 + vbmin_v^2);
-
-            v_target = 2.1938;
-
-            if SoC >= 0.9*(obj.batteryCapacity)
-               speed = convvel(4.5, 'kts', 'm/s');
+%             v_min = 0; % min true speed m/s
+%             goal_u = v_min * sind(goalHeading);
+%             goal_v = v_min * cosd(goalHeading);
+% 
+%             vbmin_u = goal_u - flow_u;
+%             vbmin_v = goal_v - flow_v;
+%             vbmin = sqrt(vbmin_u^2 + vbmin_v^2);
+% 
+%             v_target = 2.1938;
+% 
+%             if SoC >= 0.9*(obj.batteryCapacity)
+%                speed = convvel(4.5, 'kts', 'm/s');
+%             else
+%                 speed = max(v_target, vbmin);
+%             end
+            
+            % Prescribed SoC
+            v_pb = polyval(obj.speedFit, irradiance);
+            k = 0.75;
+            soc_target = interp1(obj.sched_times, obj.target_soc, currentTime); % find target SoC
+            if (SoC - soc_target) > 0
+                v_des = polyval(obj.speedFit, k*(SoC - soc_target));
             else
-                speed = max(v_target, vbmin);
+                v_des = 0;
             end
-
+            speed = v_pb + v_des;
 
             % 0 change in SoC
             %             if irradiance >= polyval(obj.powerFit, convvel(4.5, 'kts', 'm/s'))
