@@ -337,13 +337,13 @@ end
 % toc
 
 % estimate additional distance value of energy remaining
-t = 6; % 6 hours
+% t = 6; % 6 hours
 % mpcTime = hours(minutes(time));
-
-p_avg = (SoC_end(1) - SoC_end(end))/12;
-J_inf = seconds(hours(t))*(polyval(obj.speedFit, p_avg + (SoC_end(end)/t)) - polyval(obj.speedFit, p_avg));
-J_inf = J_inf/1000;
-J_inf = min([J_inf, sum(dist)]);
+% 
+% p_avg = (SoC_end(1) - SoC_end(end))/12;
+% J_inf = seconds(hours(t))*(polyval(obj.speedFit, p_avg + (SoC_end(end)/t)) - polyval(obj.speedFit, p_avg));
+% J_inf = J_inf/1000;
+% J_inf = min([J_inf, sum(dist)]);
 
 % Scheduled J_inf
 % J_inf = 0; % initialize J_inf value
@@ -358,5 +358,15 @@ J_inf = min([J_inf, sum(dist)]);
 %     temp_SoC = temp_SoC - p_avg;
 % end
 
-out = sum(dist) + J_inf;
+% Terminal Cost Implementation
+k = 0.75;
+if time + minutes(hours(12)) > obj.sched_times(end)
+    soc_target = interp1(obj.sched_times, obj.target_soc, time - minutes(hours(12)));
+else
+    soc_target = interp1(obj.sched_times, obj.target_soc, time + minutes(hours(12))); % find target SoC
+end
+J_inf = k*(SoC_end(end) - soc_target);
+
+% out = sum(dist) + J_inf;
+out = sum(dist) - J_inf;
 end
